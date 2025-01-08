@@ -4205,11 +4205,9 @@ void ZeichneMunition()
 		}
 		else
 		{
-			lpDDSBack.lock();
 			// Wenn Munition auserhalb des Bildschirm
 			ZeichneLinie(MunListe[i].p.Pos.x - 5, 0, MunListe[i].p.Pos.x + 5, 0,
 						 Panzer[MunListe[i].Besitzer].Farbe, lpDDSBack);
-			lpDDSBack.unlock();
 		}
 	}
 }
