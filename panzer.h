@@ -226,7 +226,6 @@ using DWORD = unsigned long;
 using BOOL = bool;
 using SHORT = short;
 using CHAR = char;
-
 extern SDL_Renderer* renderer;
 
 struct RECT
@@ -249,7 +248,8 @@ struct LPDIRECTDRAWSURFACE4 {
 struct LPDDSURFACEDESC2
 {
 	SDL_Texture *texture;
-	int *lpSurface;
+	SDL_Surface *surface;
+	int *lpSurface; // WRITE ONLY
 	int lPitch;
 	bool locked;
 
@@ -262,13 +262,15 @@ struct LPDDSURFACEDESC2
 		else
 		{
 			SDL_Log("Failed to lock texture: %s", SDL_GetError());
-			SDL_assert(false);
+			// SDL_assert(false);
 		}
 	}
 
 	void unlock()
 	{
 		SDL_UnlockTexture(texture);
+		// lpSurface = NULL;
+		locked = false;
 	}
 
 	void Blt(RECT *rcSrc, LPDDSURFACEDESC2* lpDDSDest, RECT *rcDest)
@@ -490,37 +492,28 @@ inline SDL_Surface *DDLoadBitmap(const char *szBitmap, int dx, int dy)
 	return data;
 }
 
-inline SDL_Texture* ConvertToStreamingTexture(SDL_Renderer* renderer, SDL_Texture* existingTexture) {
-    // Get the width and height of the existing texture
-    int width, height;
-	Uint32 format;
-    SDL_QueryTexture(existingTexture, &format, NULL, &width, &height);
-
-
-    // Create a new streaming texture
-    SDL_Texture* streamingTexture = SDL_CreateTexture(renderer, format, SDL_TEXTUREACCESS_STREAMING, width, height);
-    if (!streamingTexture) {
-        SDL_Log("Failed to create streaming texture: %s", SDL_GetError());
-        return nullptr;
-    }
-
-    // Copy the content from the existing texture to the new streaming texture
-    SDL_SetRenderTarget(renderer, streamingTexture);
-    SDL_RenderCopy(renderer, existingTexture, NULL, NULL);
-    SDL_SetRenderTarget(renderer, NULL);
-
-    return streamingTexture;
-}
-
-inline LPDDSURFACEDESC2 DDLoadTexture(SDL_Renderer *renderer, const char *szBitmap, int dx = 0, int dy = 0, BYTE r = 255, BYTE g = 0, BYTE b = 255)
+inline LPDDSURFACEDESC2 DDLoadTexture(SDL_Renderer *renderer, const char *szBitmap, int dx = 0, int dy = 0, BYTE r = 255, BYTE g = 0, BYTE b = 255, bool keep_surface = false)
 {
 	SDL_Surface *data = SDL_LoadBMP(szBitmap);
-	// SDL_SetColorKey(data, SDL_TRUE, SDL_MapRGB(data->format, 255, 0, 255));
-	SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, data);
+
+	auto* fmt = SDL_AllocFormat(SDL_PIXELFORMAT_ARGB8888);
+	auto* tmp = SDL_ConvertSurface(data, fmt, 0);
+	SDL_SetColorKey(tmp, SDL_TRUE, SDL_MapRGB(fmt, 255, 0, 255));
+	SDL_Texture* texture;
+
+	if (keep_surface) {
+		texture = SDL_CreateTextureFromSurface(renderer, tmp);
+	} else {
+        texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, tmp->w, tmp->h);
+        SDL_UpdateTexture(texture, NULL, tmp->pixels, tmp->pitch);
+		SDL_FreeFormat(fmt);
+	}
 
 	SDL_FreeSurface(data);
+
 	return {
 		texture,
+		keep_surface ? tmp : nullptr,
 		nullptr,
 		0,
 		false};

@@ -120,6 +120,7 @@ static void finiObjects(void)
 void InitDDraw()
 {
 
+
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
 	if (!renderer)
@@ -144,18 +145,19 @@ void InitDDraw()
 		return;
 	}
 
-	surf = SDL_CreateRGBSurface(0, MAXSPIELER * PANZERBREITE, PANZERHOEHE + 10, 32, 0, 0, 0, 0);
-	SDL_SetColorKey(surf, SDL_TRUE, SDL_MapRGB(surf->format, 255, 0, 255));
-	lpDDSPanzSave.texture = SDL_CreateTextureFromSurface(renderer, surf);
+	lpDDSPanzSave.texture  = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, MAXSPIELER * PANZERBREITE, PANZERHOEHE + 10);
+	SDL_SetRenderTarget(renderer, lpDDSPanzSave.texture);
+	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
+	SDL_RenderClear(renderer);
+	SDL_SetRenderTarget(renderer, NULL);
 
-	ddpf = *surf->format;
-
-	SDL_FreeSurface(surf);
 
 	// In diese Surface sollen die Cursor geladen werden
 	surf = DDLoadBitmap(Cursorbmp, 0, 0, 255, 0, 255);
 	lpDDSCursor = SDL_CreateColorCursor(surf, 0, 0);
 	SDL_FreeSurface(surf);
+	// use cursor
+	SDL_SetCursor(lpDDSCursor);
 
 	// In diese Surface sollen die Schrift1 geladen werden
 	lpDDSSchrift1 = DDLoadTexture(renderer, Schrift1);
@@ -167,10 +169,10 @@ void InitDDraw()
 	lpDDSSchrift3 = DDLoadTexture(renderer, Schrift3);
 
 	// In diese Surface sollen die Panzer geladen werden
-	lpDDSPanzer = DDLoadTexture(renderer, Panzerbmp);
+	lpDDSPanzer = DDLoadTexture(renderer, Panzerbmp, 0, 0, 255, 0, 255, true);
 
 	// In diese Surface soll die Munition geladen werden
-	lpDDSMunition = DDLoadTexture(renderer, Munitionbmp);
+	lpDDSMunition = DDLoadTexture(renderer, Munitionbmp, 0, 0, 255, 0, 255, true);
 
 	// Da kommt der Hintergrund rein
 	lpDDSHimmel = DDLoadTexture(renderer, Himmelbmp);
@@ -182,7 +184,7 @@ void InitDDraw()
 	lpDDSHimmel3 = DDLoadTexture(renderer, Himmel3bmp);
 
 	// und hier die Sonstigen sachen
-	lpDDSSonstiges = DDLoadTexture(renderer, Sonstigesbmp);
+	lpDDSSonstiges = DDLoadTexture(renderer, Sonstigesbmp, 0, 0, 255, 0, 255, true);
 
 	// hier der Menuehintergrund
 	lpDDSMBack = DDLoadTexture(renderer, MBackbmp);
@@ -536,6 +538,7 @@ void TranspBlt(short Bild, short Prozent)
 	short x, y;
 	RGBSTRUCT rgbalt;
 
+	Bmp[Bild].Surface.lock();
 	lpDDSBack.lock();
 
 	for (x = 0; x < Bmp[Bild].Breite; x++)
@@ -548,7 +551,7 @@ void TranspBlt(short Bild, short Prozent)
 							   (short)(y + rcRectdes.top), &lpDDSBack));
 			rgbalt = rgbStruct;
 			DWORD2RGB(GetPixel((short)(x + Bmp[Bild].rcSrc.left),
-							   (short)(y + Bmp[Bild].rcSrc.top), &lpDDSSonstiges));
+							   (short)(y + Bmp[Bild].rcSrc.top), &Bmp[Bild].Surface));
 			if ((rgbStruct.r == 0) && (rgbStruct.g == 0) && (rgbStruct.b == 0))
 				continue;
 			PutPixel((short)(x + rcRectdes.left),
@@ -559,7 +562,7 @@ void TranspBlt(short Bild, short Prozent)
 					 &lpDDSBack);
 		}
 
-	Bmp[Bild].Surface.lock();
+	Bmp[Bild].Surface.unlock();
 	lpDDSBack.unlock();
 }
 
@@ -2276,9 +2279,9 @@ inline DWORD RGB2DWORD(BYTE r, BYTE g, BYTE b)
 
 inline void DWORD2RGB(DWORD color)
 {
-	rgbStruct.r = (BYTE)((color & 0xF800) >> 8);
-	rgbStruct.g = (BYTE)((color & 0x07E0) >> 3);
-	rgbStruct.b = (BYTE)((color & 0x001F) << 3);
+	rgbStruct.r = (BYTE)(color >> 16) & 0xFF;
+	rgbStruct.g = (BYTE)(color >> 8) & 0xFF;
+	rgbStruct.b = (BYTE)color & 0xFF;
 }
 
 void PutPixel(short x, short y, DWORD color, LPDDSURFACEDESC2 *ddsdtmp)
@@ -2287,22 +2290,29 @@ void PutPixel(short x, short y, DWORD color, LPDDSURFACEDESC2 *ddsdtmp)
 		return;
 
 	int *pixels = ddsdtmp->lpSurface;
-	int pitch = ddsdtmp->lPitch;
+	int pitch = ddsdtmp->lPitch / 4;
+	SDL_assert(pixels != nullptr);
+
+	// convert rgb to rgba
+	color = (color << 8) | 0xFF;
 	pixels[y * pitch + x] = color;
 }
 
 DWORD GetPixel(short x, short y, LPDDSURFACEDESC2 *ddsdtmp)
 {
-	DWORD color;
+	int color;
 
 	if ((x >= MAXX) || (x < 0) || (y >= MAXY) || (y < 0))
 		return 0;
 
-	int *pixels = ddsdtmp->lpSurface;
-	int pitch = ddsdtmp->lPitch;
-	color = pixels[y * pitch + x];
+	SDL_assert(ddsdtmp->surface != nullptr);
 
-	return (color);
+	int *pixels = (int*)ddsdtmp->surface->pixels;
+	color = pixels[y * ddsdtmp->surface->w + x];
+
+	// remove alpha channel from rgba value
+	color = color >> 8;
+	return color;
 }
 
 inline double Absdouble(double Zahl)
@@ -3245,10 +3255,10 @@ short CheckKollision(short x, short y, bool genau)
 				yintern = Bmp[Panzer[i].Bild].rcSrc.top +
 						  y - (Panzer[i].p.Pos.y - Bmp[Panzer[i].Bild].Hoehe);
 				// Treffer?
-				if (GetPixel(xintern, yintern, &lpDDSSonstiges) != Tansparent)
+				if (GetPixel(xintern, yintern, &lpDDSScape) != Tansparent)
 				{
 					if (Testmodus)
-						PutPixel(xintern, yintern, RGB2DWORD(0, 0, 255), &lpDDSSonstiges);
+						PutPixel(xintern, yintern, RGB2DWORD(0, 0, 255), &lpDDSScape);
 					erg = i;
 					break;
 				}
@@ -3648,10 +3658,16 @@ void MakePixel(short x, short y, short Typ, short vx, short vy, bool Active, lon
 	}
 	else
 	{
-		Bmp[TEXFELS].Surface.lock();
-		Pixel[x][y].Farbe = GetPixel(x % Bmp[TEXFELS].Breite,
+		auto col = GetPixel(x % Bmp[TEXFELS].Breite,
 									 y % Bmp[TEXFELS].Hoehe, &Bmp[TEXFELS].Surface);
-		Bmp[TEXFELS].Surface.unlock();
+		// get rid of alpha channel in argb value
+		auto r = col & 0xFF;
+		auto g = (col >> 8) & 0xFF;
+		auto b = (col >> 16) & 0xFF;
+		b -= 75;
+
+		col = SDL_MapRGB(Bmp[TEXFELS].Surface.surface->format, r, g, b);
+		Pixel[x][y].Farbe = col;
 	}
 
 	PutPixel(x, y, Pixel[x][y].Farbe, &lpDDSScape); // Pixel in die Surface malen
@@ -3860,7 +3876,7 @@ void NeuesSpiel()
 	rcRectdes.top = 0;
 	rcRectdes.right = MAXX;
 	rcRectdes.bottom = MAXY;
-	lpDDSPrimary.Blt(&rcRectdes, &lpDDSMBack, &rcRectdes);
+	// lpDDSPrimary.Blt(&rcRectdes, &lpDDSMBack, &rcRectdes);
 	rcRectsrc.left = Bmp[MLADESPIEL].rcSrc.left;
 	rcRectsrc.top = Bmp[MLADESPIEL].rcSrc.top;
 	rcRectsrc.right = Bmp[MLADESPIEL].rcSrc.right;
@@ -3888,8 +3904,11 @@ void NeuesSpiel()
 	lpDDSPanzSave.clear();
 
 	// Landschaft erzeugen
+	printf("Generating landscape...\n");
 	Compute();
+	printf("Landscape generated.\n");
 
+	AktMenue = MENSTART;
 	// Panzer setzen
 	PutPanzer();
 
@@ -3910,6 +3929,7 @@ void NeuesSpiel()
 		ZeichnePanzer(i, 0);
 	}
 	ZeichneBmp(0, PANZERHOEHE, WINDHOSE, rcGesamt, (short)Wind.x + 3, lpDDSPanzSave.texture);
+
 }
 
 void InitCredits()
@@ -4036,13 +4056,13 @@ void Zeige(bool flippen)
 
 	// Hintergrund zeichnen
 	if (Himmel == 0)
-		Blitten(lpDDSHimmel.texture, lpDDSBack.texture, false);
+		Blitten2(lpDDSHimmel.texture, lpDDSBack.texture, false);
 	else if (Himmel == 1)
-		Blitten(lpDDSHimmel2.texture, lpDDSBack.texture, false);
+		Blitten2(lpDDSHimmel2.texture, lpDDSBack.texture, false);
 	else if (Himmel == 2)
-		Blitten(lpDDSHimmel3.texture, lpDDSBack.texture, false);
+		Blitten2(lpDDSHimmel3.texture, lpDDSBack.texture, false);
 
-	Blitten(lpDDSScape.texture, lpDDSBack.texture, true); // Landschaft zeichnen
+	Blitten2(lpDDSScape.texture, lpDDSBack.texture, true); // Landschaft zeichnen
 
 	ZeigePanzer(); // Panzer + Schutzschild
 
@@ -4077,7 +4097,7 @@ void Zeige(bool flippen)
 		rcRectdes.top = 2;
 		rcRectdes.right = MAXX - 5;
 		rcRectdes.bottom = 2 + Bmp[WINDHOSE].Hoehe;
-		Blitten(lpDDSPanzSave.texture, lpDDSBack.texture, false);
+		Blitten2(lpDDSPanzSave.texture, lpDDSBack.texture, false);
 	}
 
 	/*rcRectsrc.left		= 0;
@@ -4093,7 +4113,7 @@ void Zeige(bool flippen)
 	// Flippen
 	if (flippen)
 	{
-			int result = SDL_RenderCopy(renderer, lpDDSPrimary.texture, NULL, NULL);
+			int result = SDL_RenderCopy(renderer, lpDDSBack.texture, NULL, NULL);
 	}
 }
 
@@ -4133,7 +4153,7 @@ void ZeigePanzer()
 		rcRectdes.right = rcRectdes.left + PANZERBREITE;
 		rcRectdes.bottom = rcRectdes.top + PANZERHOEHE;
 		CalcRect(rcGesamt);
-		Blitten(lpDDSPanzSave.texture, lpDDSBack.texture, true); // Panzer zeichnen
+		Blitten2(lpDDSPanzSave.texture, nullptr, true); // Panzer zeichnen
 
 		if (Panzer[i].Schild > 0)
 		{
@@ -4222,6 +4242,7 @@ void ZeichnePanzer(short i, short Teil)
 {
 	if (!Panzer[i].Aktiv)
 		return;
+	SDL_Rect rc{};
 
 	switch (Teil)
 	{
@@ -4230,21 +4251,27 @@ void ZeichnePanzer(short i, short Teil)
 		rcRectdes.top = 0;
 		rcRectdes.right = rcRectdes.left + PANZERBREITE;
 		rcRectdes.bottom = PanzSavPos[i].y;
-		lpDDSPanzSave.Blt(&rcRectdes, NULL, NULL);
 
-		lpDDSPanzSave.lock();
+		SDL_SetRenderTarget(renderer, lpDDSPanzSave.texture);
+		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
+		rc = {rcRectdes.left, rcRectdes.top, rcRectdes.right - rcRectdes.left, rcRectdes.bottom - rcRectdes.top};
+		SDL_RenderFillRect(renderer, &rc);
+		SDL_SetRenderTarget(renderer, nullptr);
+
+		// lpDDSPanzSave.lock();
 		// Kanone
 		ZeichneLinie(PanzSavPos[i].x + Bmp[Panzer[i].Bild].Breite / 2,
 					 PanzSavPos[i].y,
 					 PanzSavPos[i].x + Bmp[Panzer[i].Bild].Breite / 2 + Panzer[i].KanonePos.x,
 					 PanzSavPos[i].y + Panzer[i].KanonePos.y,
 					 Panzer[i].Farbe, lpDDSPanzSave);
-		lpDDSPanzSave.unlock();
+		// lpDDSPanzSave.unlock();
 
 		// Panzer
 		ZeichneBmp(PanzSavPos[i].x,
 				   PanzSavPos[i].y - Bmp[Panzer[i].Bild].Hoehe,
 				   Panzer[i].Bild, rcGesamt, Panzer[i].Version, lpDDSPanzSave.texture);
+		lpDDSPanzSave.Blt(&rcRectdes, NULL, NULL);
 		break;
 	case 1:
 		// Munitionsbox
@@ -4278,7 +4305,7 @@ void ZeichnePanzer(short i, short Teil)
 		rcRectdes.bottom = rcRectdes.top + Bmp[ENERGIE].Hoehe * Panzer[i].LebensEnergie / MAXLEBENSENERGIE;
 		;
 		CalcRect(rcGesamt);
-		Blitten(Bmp[ENERGIE].Surface.texture, lpDDSPanzSave.texture, false);
+		Blitten2(Bmp[ENERGIE].Surface.texture, lpDDSPanzSave.texture, false);
 		// Munition
 		if ((Panzer[i].Munition == MUNGEWEHR) || (Panzer[i].Munition == MUNFASS))
 		{
@@ -4310,7 +4337,7 @@ void ZeichnePanzer(short i, short Teil)
 	}
 }
 
-void ZeichneBmp(short x, short y, short i, RECT Ziel, short Version, SDL_Texture *lpDDSNach)
+void ZeichneBmp(short x, short y, short i, RECT, short Version, SDL_Texture *lpDDSNach)
 {
 	SDL_Rect src {
 		.x = Bmp[i].rcSrc.left,
@@ -4325,56 +4352,18 @@ void ZeichneBmp(short x, short y, short i, RECT Ziel, short Version, SDL_Texture
         .h = Bmp[i].Hoehe
     };
 
-	SDL_SetRenderTarget(renderer, nullptr);
+	SDL_SetRenderTarget(renderer, lpDDSNach);
 	SDL_RenderCopy(renderer, Bmp[i].Surface.texture, &src, &des);
 	SDL_SetRenderTarget(renderer, nullptr);
 }
 
 void ZeichneLinie(short x1, short y1, short x2, short y2, DWORD color, LPDDSURFACEDESC2& ddsdtmp)
 {
-	short i;
-	float x, y;
-	short Dx, Dy;
-	float Sx, Sy;
-	short Steps;
-
-	Steps = 0;
-
-	Dx = x2 - x1;
-	Dy = y2 - y1;
-	x = x2;
-	y = y2;
-	if (abs(Dx) > abs(Dy))
-	{
-		if (Dx > 0)
-			Sx = -1;
-		else
-			Sx = 1;
-		if (Dx == 0)
-			Sy = 0;
-		else
-			Sy = (float)Dy / ((float)(Dx * Sx));
-		Steps = abs(Dx);
-	}
-	else
-	{
-		if (Dy > 0)
-			Sy = -1;
-		else
-			Sy = 1;
-		if (Dy == 0)
-			Sx = 0;
-		else
-			Sx = (float)Dx / ((float)(Dy * Sy));
-		Steps = abs(Dy);
-	}
-
-	for (i = 0; i < Steps; i++)
-	{
-		PutPixel((short)x, (short)y, color, &ddsdtmp);
-		x += Sx;
-		y += Sy;
-	}
+	SDL_SetRenderTarget(renderer, ddsdtmp.texture);
+	SDL_SetRenderDrawColor(renderer, (color >> 16) & 0xFF, (color >> 8) & 0xFF, color & 0xFF, 0xFF);
+	// SDL_SetRenderDrawColor(renderer, 0xff, 0, 0, 0xFF);
+	SDL_RenderDrawLine(renderer, x1, y1, x2, y2);
+	SDL_SetRenderTarget(renderer, nullptr);
 }
 
 void DrawString(char *string, short x, short y, short Art, SDL_Texture *lpDDSNach)
@@ -4939,7 +4928,7 @@ void Fetz(short x, short y, short Bild)
 	for (Relx = 0; Relx < Bmp[Bild].Breite; Relx++)
 		for (Rely = 0; Rely < Bmp[Bild].Hoehe; Rely++)
 		{
-			Farbe = GetPixel(Bmp[Bild].rcSrc.left + Relx, Bmp[Bild].rcSrc.top + Rely, &lpDDSSonstiges);
+			Farbe = GetPixel(Bmp[Bild].rcSrc.left + Relx, Bmp[Bild].rcSrc.top + Rely, &lpDDSScape);
 			if (Farbe == Tansparent)
 				continue;
 			MakeFXPixel(x + Relx, y + Rely, Farbe, rand() % 10,
@@ -5289,16 +5278,16 @@ short Run()
 
 			if (Bild % (LastBild / 20 + 1) == 0) // unabh�nig von der Framerate
 				CheckBallon();					 // Ballon erzeugen und bewegen
-			CheckPanzer();						 // Panzer berechnen
-			CheckHimmelPixel();					 // Nicht sichtbaren Bereich berechnen
-			CheckMunListe();					 // Geschosse berechnen
-
-			lpDDSScape.lock();
-			MakeWetter();						 // Wetter erzeugen
-			FindActivePixel();					 // Pixel berechnen
-			if (Bild % (LastBild / 10 + 1) == 0) // unabh�nig von der Framerate
-				CheckFXPixel();					 // EffektPixel �berpr�fen
-			lpDDSScape.unlock();
+			// CheckPanzer();						 // Panzer berechnen
+			// CheckHimmelPixel();					 // Nicht sichtbaren Bereich berechnen
+			// CheckMunListe();					 // Geschosse berechnen
+			//
+			// lpDDSScape.lock();
+			// MakeWetter();						 // Wetter erzeugen
+			// FindActivePixel();					 // Pixel berechnen
+			// if (Bild % (LastBild / 10 + 1) == 0) // unabh�nig von der Framerate
+			// 	CheckFXPixel();					 // EffektPixel �berpr�fen
+			// lpDDSScape.unlock();
 
 			if (AktMenue != -1) // ein Overlaymen� vorhanden
 			{
@@ -5351,9 +5340,10 @@ short Run()
 					}
 				}
 				Menue[AktMenue].zeige(); // Men� anzeigen
+
 			}
 			else
-				Zeige(true); // Das Bild aufbauen
+				Zeige(false); // Das Bild aufbauen
 		}
 		else if (Spielzustand == SZMENUE)
 		{
@@ -5391,6 +5381,11 @@ short Run()
 		else if (Spielzustand == SZTITEL) {
 			MakeTitel();
 		}
+
+		SDL_Rect dest {
+			0, 0, 40, 40
+		};
+		SDL_RenderCopy(renderer, lpDDSPanzSave.texture, NULL, &dest);
 
 		SDL_RenderPresent(renderer);
 
