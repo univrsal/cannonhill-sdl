@@ -529,24 +529,6 @@ void Blitten2(SDL_Texture *lpDDSVon, SDL_Texture *lpDDSNach, bool Transp)
 	SDL_SetRenderTarget(renderer, NULL);
 }
 
-void Blitten(SDL_Texture *lpDDSVon, SDL_Texture *lpDDSNach, bool Transp)
-{
-	SDL_Rect src, dest;
-
-	src.x = 0;
-	src.y = 0;
-	src.w = MAXX;
-	src.h = MAXY;
-
-	dest.x = 0;
-	dest.y = 0;
-	dest.w = MAXX;
-	dest.h = MAXY;
-	SDL_SetRenderTarget(renderer, lpDDSNach);
-	SDL_RenderCopy(renderer, lpDDSVon, &src, &dest);
-	SDL_SetRenderTarget(renderer, NULL);
-}
-
 void InitStructs(short zustand)
 {
 	short i, j;
@@ -1790,6 +1772,7 @@ void CheckMouse(SDL_Event *event)
 short CheckKey(SDL_Event *event)
 {
 #define KEYDOWN(__key) (event->key.keysym.sym == __key && event->type == SDL_KEYDOWN)
+#define KEYUP(__key) (event->key.keysym.sym == __key && event->type == SDL_KEYUP)
 
 	short i, j;
 
@@ -1862,7 +1845,7 @@ short CheckKey(SDL_Event *event)
 						ZeichnePanzer(i, 1);
 					}
 				}
-				else
+				else if (KEYUP(Panzer[i].KeyFire))
 				{
 					Panzer[i].ButtonDownFire = false;
 					if ((Panzer[i].SchussEnergie != 0) &&
