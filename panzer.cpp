@@ -1,5 +1,8 @@
 #include "panzer.h"
 
+#include <chrono>
+#include <thread>
+
 SDL_Window *window = NULL;
 SDL_Renderer *renderer = NULL;
 
@@ -106,6 +109,8 @@ static char MKeyboardbmp[] = "img/Keyboard.bmp";
 static char Creditsbmp[] = "img/credits.bmp";
 static char Titelbmp[] = "img/titel.bmp";
 
+float ScaleFactor = 2.0f;
+
 /*
  * finiObjects
  *
@@ -119,6 +124,7 @@ static void finiObjects(void)
 
 void InitDDraw()
 {
+	auto Monitor = 1;//SDL_GetWindowDisplayIndex(window);
 
 
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
@@ -130,7 +136,7 @@ void InitDDraw()
 
 	// Create the primary surface with 1 back buffer
 	lpDDSPrimary.texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, MAXX, MAXY);
-	lpDDSBack.texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, MAXX, MAXY);
+	lpDDSBack.texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, MAXX, MAXY);
 
 	// Create the texture for the landscape
 	auto *surf = SDL_CreateRGBSurface(0, MAXX, MAXY, 32, 0, 0, 0, 0);
@@ -154,8 +160,14 @@ void InitDDraw()
 
 	// In diese Surface sollen die Cursor geladen werden
 	surf = DDLoadBitmap(Cursorbmp, 0, 0, 255, 0, 255);
-	lpDDSCursor = SDL_CreateColorCursor(surf, 0, 0);
+	auto* fmt = SDL_AllocFormat(SDL_PIXELFORMAT_ARGB8888);
+	auto* tmp = SDL_ConvertSurface(surf, fmt, 0);
+	auto* cursor = ScaleSurface(tmp, ScaleFactor);
+	lpDDSCursor = SDL_CreateColorCursor(cursor, 0, 0);
 	SDL_FreeSurface(surf);
+	SDL_FreeSurface(tmp);
+	SDL_FreeSurface(cursor);
+
 	// use cursor
 	SDL_SetCursor(lpDDSCursor);
 
@@ -163,7 +175,7 @@ void InitDDraw()
 	lpDDSSchrift1 = DDLoadTexture(renderer, Schrift1);
 
 	// In diese Surface sollen die Schrift2 geladen werden
-	lpDDSSchrift2 = DDLoadTexture(renderer, Schrift2);
+	lpDDSSchrift2 = DDLoadTexture(renderer, Schrift2, 0, 0, 255, 0, 255, true);
 
 	// In diese Surface sollen die Schrift3 geladen werden
 	lpDDSSchrift3 = DDLoadTexture(renderer, Schrift3);
@@ -511,6 +523,8 @@ void Blitten2(SDL_Texture *lpDDSVon, SDL_Texture *lpDDSNach, bool Transp)
 	dest.w = rcRectdes.right - rcRectdes.left;
 	dest.h = rcRectdes.bottom - rcRectdes.top;
 	SDL_SetRenderTarget(renderer, lpDDSNach);
+	if (Transp)
+        SDL_SetTextureBlendMode(lpDDSVon, SDL_BLENDMODE_BLEND);
 	SDL_RenderCopy(renderer, lpDDSVon, &src, &dest);
 	SDL_SetRenderTarget(renderer, NULL);
 }
@@ -531,39 +545,6 @@ void Blitten(SDL_Texture *lpDDSVon, SDL_Texture *lpDDSNach, bool Transp)
 	SDL_SetRenderTarget(renderer, lpDDSNach);
 	SDL_RenderCopy(renderer, lpDDSVon, &src, &dest);
 	SDL_SetRenderTarget(renderer, NULL);
-}
-
-void TranspBlt(short Bild, short Prozent)
-{
-	short x, y;
-	RGBSTRUCT rgbalt;
-
-	Bmp[Bild].Surface.lock();
-	lpDDSBack.lock();
-
-	for (x = 0; x < Bmp[Bild].Breite; x++)
-		for (y = 0; y < Bmp[Bild].Hoehe; y++)
-		{
-			if ((x + rcRectdes.left >= MAXX) || (x + rcRectdes.left <= 0) ||
-				(y + rcRectdes.top >= MAXY) || (y + rcRectdes.top <= 0))
-				continue;
-			DWORD2RGB(GetPixel((short)(x + rcRectdes.left),
-							   (short)(y + rcRectdes.top), &lpDDSBack));
-			rgbalt = rgbStruct;
-			DWORD2RGB(GetPixel((short)(x + Bmp[Bild].rcSrc.left),
-							   (short)(y + Bmp[Bild].rcSrc.top), &Bmp[Bild].Surface));
-			if ((rgbStruct.r == 0) && (rgbStruct.g == 0) && (rgbStruct.b == 0))
-				continue;
-			PutPixel((short)(x + rcRectdes.left),
-					 (short)(y + rcRectdes.top),
-					 RGB2DWORD(rgbalt.r + (rgbStruct.r - rgbalt.r) * Prozent / 100,
-							   rgbalt.g + (rgbStruct.g - rgbalt.g) * Prozent / 100,
-							   rgbalt.b + (rgbStruct.b - rgbalt.b) * Prozent / 100),
-					 &lpDDSBack);
-		}
-
-	Bmp[Bild].Surface.unlock();
-	lpDDSBack.unlock();
 }
 
 void InitStructs(short zustand)
@@ -1727,8 +1708,8 @@ void CheckMouse(SDL_Event *event)
 		xDiff = event->motion.xrel;
 		yDiff = event->motion.yrel;
 
-		MousePosition.x = event->motion.x;
-		MousePosition.y = event->motion.y;
+		MousePosition.x = event->motion.x / ScaleFactor;
+		MousePosition.y = event->motion.y / ScaleFactor;
 	}
 	// Mausbewegung
 	if (MousePosition.x < 0)
@@ -2282,6 +2263,18 @@ inline void DWORD2RGB(DWORD color)
 	rgbStruct.r = (BYTE)(color >> 16) & 0xFF;
 	rgbStruct.g = (BYTE)(color >> 8) & 0xFF;
 	rgbStruct.b = (BYTE)color & 0xFF;
+}
+
+void DrawPixel(short x, short y, DWORD color)
+{
+	if ((x >= MAXX) || (x < 0) || (y >= MAXY) || (y < 0))
+		return;
+
+
+	// convert rgb to rgba
+	color = (color << 8) | 0xFF;
+	SDL_SetRenderDrawColor(renderer, (color >> 16) & 0xFF, (color >> 8) & 0xFF, color & 0xFF, 0xFF);
+	SDL_RenderDrawPoint(renderer, x, y);
 }
 
 void PutPixel(short x, short y, DWORD color, LPDDSURFACEDESC2 *ddsdtmp)
@@ -2968,8 +2961,8 @@ void CheckFXPixel()
 				}
 			}
 			if (i <= LastFX)
-				PutPixel(FXListe[i].Pos.x, FXListe[i].Pos.y,
-						 FXListe[i].Farbe, &lpDDSBack);
+				DrawPixel(FXListe[i].Pos.x, FXListe[i].Pos.y,
+						 FXListe[i].Farbe);
 		}
 		else
 		{
@@ -4113,7 +4106,7 @@ void Zeige(bool flippen)
 	// Flippen
 	if (flippen)
 	{
-			int result = SDL_RenderCopy(renderer, lpDDSBack.texture, NULL, NULL);
+			// int result = SDL_RenderCopy(renderer, lpDDSBack.texture, NULL, NULL);
 	}
 }
 
@@ -4153,7 +4146,7 @@ void ZeigePanzer()
 		rcRectdes.right = rcRectdes.left + PANZERBREITE;
 		rcRectdes.bottom = rcRectdes.top + PANZERHOEHE;
 		CalcRect(rcGesamt);
-		Blitten2(lpDDSPanzSave.texture, nullptr, true); // Panzer zeichnen
+		Blitten2(lpDDSPanzSave.texture, lpDDSBack.texture, true); // Panzer zeichnen
 
 		if (Panzer[i].Schild > 0)
 		{
@@ -4290,7 +4283,7 @@ void ZeichnePanzer(short i, short Teil)
 							  Bmp[POWER].Breite * Panzer[i].SchussEnergie / MAXSCHUSSENERGIE;
 			rcRectdes.bottom = rcRectdes.top + Bmp[POWER].Hoehe;
 			CalcRect(rcGesamt);
-			Blitten(Bmp[POWER].Surface.texture, lpDDSPanzSave.texture, false);
+			Blitten2(Bmp[POWER].Surface.texture, lpDDSPanzSave.texture, false);
 		}
 		// SchussEnergieschrift
 		sprintf(StdString, "%d", Panzer[i].SchussEnergie);
@@ -4923,20 +4916,16 @@ void Fetz(short x, short y, short Bild)
 	short Relx, Rely;
 	DWORD Farbe;
 
-	Bmp[Bild].Surface.lock();
-
 	for (Relx = 0; Relx < Bmp[Bild].Breite; Relx++)
 		for (Rely = 0; Rely < Bmp[Bild].Hoehe; Rely++)
 		{
-			Farbe = GetPixel(Bmp[Bild].rcSrc.left + Relx, Bmp[Bild].rcSrc.top + Rely, &lpDDSScape);
+			Farbe = GetPixel(Bmp[Bild].rcSrc.left + Relx, Bmp[Bild].rcSrc.top + Rely, &Bmp[Bild].Surface);
 			if (Farbe == Tansparent)
 				continue;
 			MakeFXPixel(x + Relx, y + Rely, Farbe, rand() % 10,
 						double(-(Bmp[Bild].Breite / 2 - Relx)) / 5 + double(rand() % 10) / 10 - 0.5,
 						double(-(Bmp[Bild].Hoehe / 2 - Rely)) / 5 + double(rand() % 10) / 10 - 0.5);
 		}
-
-	Bmp[Bild].Surface.unlock();
 }
 
 void Laser(short i)
@@ -5231,7 +5220,7 @@ short Run()
             ButtonPush = 0;
 
 		// Zeit abfragen
-		auto start = SDL_GetTicks();
+		auto start = std::chrono::high_resolution_clock::now();
 		SDL_RenderClear(renderer);
 
 		// fps rausfinden
@@ -5278,16 +5267,16 @@ short Run()
 
 			if (Bild % (LastBild / 20 + 1) == 0) // unabh�nig von der Framerate
 				CheckBallon();					 // Ballon erzeugen und bewegen
-			// CheckPanzer();						 // Panzer berechnen
-			// CheckHimmelPixel();					 // Nicht sichtbaren Bereich berechnen
-			// CheckMunListe();					 // Geschosse berechnen
+			CheckPanzer();						 // Panzer berechnen
+			CheckHimmelPixel();					 // Nicht sichtbaren Bereich berechnen
 			//
-			// lpDDSScape.lock();
-			// MakeWetter();						 // Wetter erzeugen
-			// FindActivePixel();					 // Pixel berechnen
-			// if (Bild % (LastBild / 10 + 1) == 0) // unabh�nig von der Framerate
-			// 	CheckFXPixel();					 // EffektPixel �berpr�fen
-			// lpDDSScape.unlock();
+			lpDDSScape.lock();
+			CheckMunListe();					 // Geschosse berechnen
+			MakeWetter();						 // Wetter erzeugen
+			FindActivePixel();					 // Pixel berechnen
+			if (Bild % (LastBild / 10 + 1) == 0) // unabh�nig von der Framerate
+				CheckFXPixel();					 // EffektPixel �berpr�fen
+			lpDDSScape.unlock();
 
 			if (AktMenue != -1) // ein Overlaymen� vorhanden
 			{
@@ -5344,11 +5333,13 @@ short Run()
 			}
 			else
 				Zeige(false); // Das Bild aufbauen
+			SDL_RenderCopy(renderer, lpDDSBack.texture, NULL, NULL);
 		}
 		else if (Spielzustand == SZMENUE)
 		{
 			if (CheckMMenue() == 0)
 				return 0;
+			SDL_RenderCopy(renderer, lpDDSBack.texture, NULL, NULL);
 		}
 		else if (Spielzustand == SZSHOP)
 		{
@@ -5385,19 +5376,22 @@ short Run()
 		SDL_Rect dest {
 			0, 0, 40, 40
 		};
-		SDL_RenderCopy(renderer, lpDDSPanzSave.texture, NULL, &dest);
+		// SDL_RenderCopy(renderer, lpDDSPanzSave.texture, NULL, &dest);
 
 		SDL_RenderPresent(renderer);
 
-		auto end = SDL_GetTicks();
+		auto end = std::chrono::high_resolution_clock::now();
 
-		if (end - start < 33) {
-			SDL_Delay(33 - (end - start));
+		auto diff_ms = std::chrono::duration<double, std::milli>(end - start).count();
+
+		if (diff_ms < 33) {
+			// Sleep(33 - diff_ms);
+			SDL_Delay(33 - diff_ms);
 		}
 		if (Bild % 30 == 0)
 		{
 			// fps rausfinden
-			printf("fps: %f\n", 1000.0 / (end - start));
+			printf("fps: %f\n", 1.0 / diff_ms);
 		}
 	}
 	return (1);
@@ -5422,8 +5416,8 @@ static BOOL doInit()
 		TITLE,
 		SDL_WINDOWPOS_CENTERED,
 		SDL_WINDOWPOS_CENTERED,
-		MAXX,
-		MAXY,
+		MAXX * 2,
+		MAXY * 2,
 		SDL_WINDOW_SHOWN);
 
 	if (!window)

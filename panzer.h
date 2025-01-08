@@ -477,6 +477,33 @@ private:
 	short background;
 };
 
+inline SDL_Surface* ScaleSurface(SDL_Surface* surface, int scaleFactor) {
+	if (scaleFactor <= 0 || surface == NULL) {
+		return NULL;
+	}
+
+	// Calculate new dimensions
+	int newWidth = surface->w * scaleFactor;
+	int newHeight = surface->h * scaleFactor;
+
+	// Create a new surface with the scaled dimensions
+	SDL_Surface* scaledSurface = SDL_CreateRGBSurface(0, newWidth, newHeight, surface->format->BitsPerPixel,
+													  surface->format->Rmask, surface->format->Gmask,
+													  surface->format->Bmask, surface->format->Amask);
+	if (scaledSurface == NULL) {
+		return NULL;
+	}
+
+	// Set the scaling rectangle
+	SDL_Rect srcRect = {0, 0, surface->w, surface->h};
+	SDL_Rect destRect = {0, 0, newWidth, newHeight};
+
+	// Scale the original surface onto the new surface
+	SDL_BlitScaled(surface, &srcRect, scaledSurface, &destRect);
+
+	return scaledSurface;
+}
+
 inline SDL_Surface *DDLoadBitmap(const char *szBitmap, int dx, int dy, BYTE r, BYTE g, BYTE b)
 {
 	SDL_Surface *data = SDL_LoadBMP(szBitmap);
