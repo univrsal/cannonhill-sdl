@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - 'sdl2-port'
+      - 'master'
       - 'release/**'
     tags:
       - '*'
