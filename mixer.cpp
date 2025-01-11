@@ -7,6 +7,7 @@ wav_file::wav_file(const string &path)
 {
     if (SDL_LoadWAV(path.c_str(), &m_spec, &m_buf, &m_len) == nullptr)
         SDL_Log("Couldn't load '%s': '%s'", path.c_str(), SDL_GetError());
+    m_duration = (double)m_len / (m_spec.freq * m_spec.channels * (SDL_AUDIO_BITSIZE(m_spec.format) / 8));
 }
 
 wav_file::~wav_file()
@@ -22,6 +23,7 @@ clip::clip(shared_ptr<wav_file> w, uint8_t vol, bool loop) : m_vol(vol), m_wav(w
     m_fade = false;
     m_len = w->len();
     m_buf = w->buf();
+
 }
 
 clip::~clip()

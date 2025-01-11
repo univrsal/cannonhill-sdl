@@ -22,11 +22,16 @@ class wav_file {
     uint8_t *m_buf{};
     uint32_t m_len{};
     SDL_AudioSpec m_spec{};
+    Uint32 m_last_play_time{};
+    double m_duration{};
 
 public:
     uint32_t &len() { return m_len; }
     uint8_t *buf() { return m_buf; }
     const SDL_AudioSpec &spec() { return m_spec; }
+    Uint32 const &last_play_time() const{ return m_last_play_time; }
+    void set_last_play_time(Uint32 t) { m_last_play_time = t; }
+    double const &duration() const { return m_duration; }
     wav_file(const string &path);
 
     ~wav_file();
@@ -89,6 +94,8 @@ public:
     void add_clip(const clip &c);
     void audio_tick(uint8_t *stream, int len);
     void stop();
+
+    vector<clip> &clips() { return m_clips; }
 };
 
 class speaker : public device {
@@ -100,6 +107,8 @@ public:
     speaker(const string &name);
     void play(id chan, const clip &c);
     void stop_channel(id chan);
+
+    map<id, channel> &channels() { return m_channels; }
 };
 
 class microphone : public device {

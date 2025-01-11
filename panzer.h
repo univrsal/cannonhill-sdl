@@ -415,7 +415,7 @@ struct MUNLISTE
 	PHYSIK p;
 	short Besitzer;	   // Wem geh�rt das Geschoss
 	bool Ausserhalb;   // Oberhalb des Bildschirmrandes
-	short SoundBuffer; //-1 = noch kein Soundbuffer sonst der aktive Soundbuffer
+	audio::file SoundBuffer; //-1 = noch kein Soundbuffer sonst der aktive Soundbuffer
 };
 
 struct ART

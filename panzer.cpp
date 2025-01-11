@@ -306,12 +306,11 @@ short PlaySound(short Sound, short Volume, short Pan, short SoundBuffer, bool Lo
 	// return SoundBuffer;
 }
 
-void StopSound(short Channel)
+void StopSound(audio::file f)
 {
-	if ((Soundzustand <= 0) || (Channel == -1))
+	if (Soundzustand <= 0 || f == audio::NO_SOUND)
 		return;
-
-	// lpdsbWavPlay[Channel]->Stop(); TODO
+	audio_manager->stop(f);
 }
 
 void StopAllSound()
@@ -1525,7 +1524,7 @@ void InitStructs(short zustand)
 			MunListe[i].Ausserhalb = false;
 			MunListe[i].p.Lifetime = -1;
 			MunListe[i].Besitzer = -1;
-			MunListe[i].SoundBuffer = -1;
+			MunListe[i].SoundBuffer = audio::NO_SOUND;
 			MunListe[i].p.Art = MUNSTEIN;
 			MunListe[i].p.Relx = 0.5;
 			MunListe[i].p.Rely = 0.5;
@@ -1705,7 +1704,6 @@ void CheckMouse(SDL_Event *event)
 		MousePosition.y = MAXY - Bmp[CursorTyp].Hoehe;
 
 	Entf = sqrt(xDiff * xDiff + yDiff * yDiff);
-	printf("%f\n", Entf);
 	if (Entf > 2 && SDL_GetTicks() - LastMouseSound > 10) {
 		LastMouseSound = SDL_GetTicks();
 		audio_manager->play(static_cast<audio::file>(audio::MOUSE1 + SoundID++), audio::id::SFX, 30);
@@ -2462,7 +2460,7 @@ ZWEID Physik(bool touch, short InfoNr)
 			}
 			MunListe[InfoNr].Besitzer = -1;
 			StopSound(MunListe[InfoNr].SoundBuffer);
-			MunListe[InfoNr].SoundBuffer = -1;
+			MunListe[InfoNr].SoundBuffer = audio::NO_SOUND;
 		}
 		return (erg);
 	}
@@ -2479,7 +2477,7 @@ ZWEID Physik(bool touch, short InfoNr)
 			CalcSchussErgebnis(xneu, MunListe[InfoNr].Besitzer);
 			MunListe[InfoNr].Besitzer = -1;
 			StopSound(MunListe[InfoNr].SoundBuffer);
-			MunListe[InfoNr].SoundBuffer = -1;
+			MunListe[InfoNr].SoundBuffer = audio::NO_SOUND;
 			Panzer[MunListe[InfoNr].Besitzer].SchussEnergie = 0;
 			ZeichnePanzer(MunListe[InfoNr].Besitzer, 1);
 		}
@@ -2701,7 +2699,7 @@ void CheckMunListe()
 			tmp = MunListe[i].Besitzer;
 			MunListe[i].Besitzer = -1;
 			StopSound(MunListe[i].SoundBuffer);
-			MunListe[i].SoundBuffer = -1;
+			MunListe[i].SoundBuffer = audio::NO_SOUND;
 
 			if (Treffer >= MAXSPIELER) // Treffer mit anderer Munition
 			{
@@ -2723,7 +2721,7 @@ void CheckMunListe()
 				}
 				MunListe[k].Besitzer = -1;
 				StopSound(MunListe[k].SoundBuffer);
-				MunListe[k].SoundBuffer = -1;
+				MunListe[k].SoundBuffer = audio::NO_SOUND;
 			}
 			if (Treffer == -2)
 				BallonAbschuss(tmp);
@@ -3124,7 +3122,7 @@ void Abschuss(short i)
 				MunListe[j].p.v.x = Panzer[i].KanonePos.x * Panzer[i].SchussEnergie / (MAXSCHUSSENERGIE / 4);
 				MunListe[j].p.v.y = Panzer[i].KanonePos.y * Panzer[i].SchussEnergie / (MAXSCHUSSENERGIE / 4);
 				MunListe[j].Besitzer = i;
-				MunListe[j].SoundBuffer = -1;
+				MunListe[j].SoundBuffer = audio::NO_SOUND;
 				MunListe[j].p.Lifetime = Munition[Panzer[i].Munition].Dauer;
 				break;
 			}
@@ -4598,7 +4596,7 @@ void PanzerExpl(short PanzNr)
 			MunListe[j].p.v.x = 20 - rand() % 40;
 			MunListe[j].p.v.y = -rand() % 40;
 			MunListe[j].Besitzer = PanzNr;
-			MunListe[j].SoundBuffer = -1;
+			MunListe[j].SoundBuffer = audio::NO_SOUND;
 			MunListe[j].p.Lifetime = Munition[MunListe[j].p.Art].Dauer;
 			break;
 		}
@@ -4733,7 +4731,7 @@ void Explosion(short MunNr)
 				MunListe[j].p.v.x = MunListe[MunNr].p.v.x + 20 - rand() % 40;
 				MunListe[j].p.v.y = MunListe[MunNr].p.v.y + 20 - rand() % 40;
 				MunListe[j].Besitzer = MunListe[MunNr].Besitzer;
-				MunListe[j].SoundBuffer = -1;
+				MunListe[j].SoundBuffer = audio::NO_SOUND;
 				MunListe[j].p.Lifetime = Munition[MunListe[j].p.Art].Dauer;
 				break;
 			}
@@ -4842,7 +4840,7 @@ void Explosion(short MunNr)
 				MunListe[j].p.v.x = 20 - rand() % 40;
 				MunListe[j].p.v.y = -rand() % 40;
 				MunListe[j].Besitzer = MunListe[MunNr].Besitzer;
-				MunListe[j].SoundBuffer = -1;
+				MunListe[j].SoundBuffer = audio::NO_SOUND;
 				MunListe[j].p.Lifetime = Munition[MunListe[j].p.Art].Dauer;
 				break;
 			}
@@ -5178,7 +5176,7 @@ short Run()
 
 	SDL_Event event{};
 
-	audio_manager->play(audio::TITLE_MUSIC, audio::id::MUSIC, 255, true);
+	audio_manager->play(audio::TITLE_MUSIC, audio::id::MUSIC, 255, true, false);
 	while (1)
 	{
 		auto Button0downbefore = Button0down;

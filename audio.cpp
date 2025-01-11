@@ -52,9 +52,12 @@ void manager::init()
     }
 }
 
-void manager::play(file f, id chan, uint8_t vol, bool loop)
+void manager::play(file f, id chan, uint8_t vol, bool loop, bool limit)
 {
     if (m_audio_files[f] && audio::active_playback_device) {
+        if (limit && SDL_GetTicks() - m_audio_files[f]->last_play_time() < m_audio_files[f]->duration() * 1000)
+            return;
+        m_audio_files[f]->set_last_play_time(SDL_GetTicks());
         audio::active_playback_device->play(chan, {m_audio_files[f], vol, loop});
     }
 }
