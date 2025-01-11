@@ -116,8 +116,32 @@ float ScaleFactor = 2.0f;
  */
 static void finiObjects(void)
 {
+	lpDDSBack.destroy();
+	lpDDSSchrift1.destroy();
+	lpDDSSchrift2.destroy();
+	lpDDSSchrift3.destroy();
+	lpDDSScape.destroy();
+	lpDDSHimmel.destroy();
+	lpDDSHimmel2.destroy();
+	lpDDSHimmel3.destroy();
+	lpDDSSchrift.destroy();
+	lpDDSPanzer.destroy();
+	lpDDSMunition.destroy();
+	lpDDSPanzSave.destroy();
+	lpDDSSonstiges.destroy();
+	lpDDSMBack.destroy();
+	lpDDSMSBack.destroy();
+	lpDDSMPunkt.destroy();
+	lpDDSMGBack.destroy();
+	lpDDSMKeyboard.destroy();
+	lpDDSCredits.destroy();
+	lpDDSTitel.destroy();
+	delete audio_manager;
+	audio::close();
+	SDL_FreeCursor(lpDDSCursor);
+	SDL_DestroyRenderer(renderer);
+	SDL_DestroyWindow(window);
 	SDL_Quit();
-
 } /* finiObjects */
 
 void InitDDraw()
@@ -1770,8 +1794,8 @@ void CheckMouse(SDL_Event *event)
 
 short CheckKey(SDL_Event *event)
 {
-#define KEYDOWN(__key) (event->key.keysym.sym == __key && event->type == SDL_KEYDOWN)
-#define KEYUP(__key) (event->key.keysym.sym == __key && event->type == SDL_KEYUP)
+#define KEYDOWN(__key) (event->type == SDL_KEYDOWN && event->key.keysym.sym == __key)
+#define KEYUP(__key) (event->type == SDL_KEYUP && event->key.keysym.sym == __key)
 
 	short i, j;
 
@@ -5426,5 +5450,7 @@ int main(int argc, char **argv)
 	{
 		return 1;
 	}
-	return Run();
+	int result = Run();
+	finiObjects();
+	return result;
 }

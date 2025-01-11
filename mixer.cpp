@@ -247,9 +247,7 @@ bool init()
 
 void close()
 {
-    for (auto &dev : devices) {
-        dev->close();
-    }
+    devices.clear();
     SDL_AudioQuit();
     SDL_QuitSubSystem(SDL_INIT_AUDIO);
 }

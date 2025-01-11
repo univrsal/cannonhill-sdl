@@ -250,11 +250,27 @@ struct LPDIRECTDRAWSURFACE4 {
 
 struct LPDDSURFACEDESC2
 {
-	SDL_Texture *texture;
-	SDL_Surface *surface;
-	int *lpSurface; // WRITE ONLY
-	int lPitch;
-	bool locked;
+	SDL_Texture *texture{};
+	SDL_Surface *surface{};
+	int *lpSurface{}; // WRITE ONLY
+	int lPitch{};
+	bool locked{};
+
+	LPDDSURFACEDESC2() = default;
+
+	void destroy()
+	{
+		if (texture)
+		{
+			SDL_DestroyTexture(texture);
+			texture = nullptr;
+		}
+		if (surface)
+		{
+			SDL_FreeSurface(surface);
+			surface = nullptr;
+		}
+	}
 
 	void lock()
 	{
@@ -536,9 +552,10 @@ inline LPDDSURFACEDESC2 DDLoadTexture(SDL_Renderer *renderer, const char *szBitm
 	} else {
         texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, tmp->w, tmp->h);
         SDL_UpdateTexture(texture, NULL, tmp->pixels, tmp->pitch);
-		SDL_FreeFormat(fmt);
+		SDL_FreeSurface(tmp);
 	}
 
+	SDL_FreeFormat(fmt);
 	SDL_FreeSurface(data);
 
 	return {

@@ -105,6 +105,8 @@ class speaker : public device {
 
 public:
     speaker(const string &name);
+    virtual ~speaker() = default;
+
     void play(id chan, const clip &c);
     void stop_channel(id chan);
 
