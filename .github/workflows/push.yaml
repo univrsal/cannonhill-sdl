@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           path: ${{ github.workspace }}
-        ref: ${{ github.ref }}
+          ref: ${{ github.ref }}
       - name: Install dependencies
         run: |
           sudo apt-get update
