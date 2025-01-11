@@ -30,7 +30,7 @@ jobs:
           sudo apt-get install -y libsdl2-dev
           sudo apt-get install -y cmake
       - name: Setup Environment
-        working-directory: ${{ github.workspace }}/plugin
+        working-directory: ${{ github.workspace }}
         id: setup
         run: |
           ## SETUP ENVIRONMENT SCRIPT
@@ -58,7 +58,7 @@ jobs:
           path: ${{ github.workspace }}
           ref: ${{ github.ref }}
       - name: Setup Environment
-        working-directory: ${{ github.workspace }}/plugin
+        working-directory: ${{ github.workspace }}
         id: setup
         run: |
           ## SETUP ENVIRONMENT SCRIPT
