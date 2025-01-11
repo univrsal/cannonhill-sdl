@@ -129,7 +129,13 @@ bool device::open(const SDL_AudioSpec &s)
     return true;
 }
 
-speaker::speaker(const string &name) : device(name, PLAYBACK) {}
+speaker::speaker(const string &name) : device(name, PLAYBACK)
+{
+#if _WIN32
+    m_channels[id::MUSIC] = channel(0.1);
+    m_channels[id::SFX] = channel(0.1);
+#endif
+}
 
 void speaker::play_audio(uint8_t *stream, int len)
 {
@@ -184,6 +190,13 @@ bool init()
         drivers.emplace_back(SDL_GetAudioDriver(i));
         SDL_Log("Available audio driver: %s", SDL_GetAudioDriver(i));
     }
+
+#if _WIN32
+    // check if we have directsound
+    if (find(drivers.begin(), drivers.end(), "directsound") != drivers.end()) {
+        driver = "directsound";
+    }
+#endif
 
     if (driver.empty()) {
         SDL_Log("No available audio driver found");

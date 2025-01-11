@@ -1,4 +1,4 @@
-#define SDL_MAIN_HANDLED
+#include "SDL_Main.h"
 #include "panzer.h"
 
 #include <chrono>
