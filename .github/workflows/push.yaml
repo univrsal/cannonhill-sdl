@@ -43,7 +43,7 @@ jobs:
       - name: Upload binary zip
         uses: actions/upload-artifact@v4
         with:
-          name: '${{ env.project }}.${{ steps.setup.outputs.gitTag }}-${{ steps.setup.outputs.commitHash }}.linux'
+          name: '${{ env.project }}.${{ steps.setup.outputs.commitHash }}.linux'
           path: ${{github.workspace}}/dist/**/*
   windows:
     name: Build Windows
@@ -61,9 +61,7 @@ jobs:
         id: setup
         run: |
           $CommitHash = (git rev-parse HEAD)[0..8] -join ''
-          $GitTag = git describe --tags --abbrev=0 || echo "0.0.1"
           "commitHash=${CommitHash}" >> $env:GITHUB_OUTPUT
-          "gitTag=${GitTag}" >> $env:GITHUB_OUTPUT
       - name: Configure CMake
         run: |
           cmake -S ${{github.workspace}} -B ${{github.workspace}}/build \
@@ -72,5 +70,5 @@ jobs:
       - name: Upload binary zip
         uses: actions/upload-artifact@v4
         with:
-          name: '${{ env.project }}.${{ steps.setup.outputs.gitTag }}-${{ steps.setup.outputs.commitHash }}.linux'
+          name: '${{ env.project }}.${{ steps.setup.outputs.commitHash }}.linux'
           path: ${{github.workspace}}/dist/**/*
