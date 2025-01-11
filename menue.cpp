@@ -6,7 +6,7 @@ extern BOOL Button0down;
 extern short ButtonPush;
 extern short AktMenue;
 extern RECT rcGesamt;
-extern LPDIRECTDRAWSURFACE4 lpDDSBack;
+extern LPDDSURFACEDESC2 lpDDSBack;
 extern short CursorTyp;
 
 Menueseite::Menueseite()
@@ -195,7 +195,7 @@ void Menueseite::zeige()
 	Menuepunkt *t = firstmenuepunkt;
 
 	if (background != -1)
-		ZeichneBmp(0, 0, background, rcGesamt, 0, lpDDSBack.tex); // Hintergrund
+		ZeichneBmp(0, 0, background, rcGesamt, 0, lpDDSBack.texture); // Hintergrund
 
 	while (t != NULL) // Menuepunkte zeichnen
 	{
@@ -205,19 +205,19 @@ void Menueseite::zeige()
 				(MousePosition.y > t->pos.y) && (MousePosition.y < (t->pos.y + Bmp[t->bild].Hoehe)) &&
 				(t->mouseover))
 			{
-				ZeichneBmp(t->pos.x, t->pos.y, t->bild, rcGesamt, 2 * (t->version) + 1, lpDDSBack.tex);
+				ZeichneBmp(t->pos.x, t->pos.y, t->bild, rcGesamt, 2 * (t->version) + 1, lpDDSBack.texture);
 				t = t->next;
 				continue;
 			}
 			if (t->mouseover)
-				ZeichneBmp(t->pos.x, t->pos.y, t->bild, rcGesamt, 2 * t->version, lpDDSBack.tex);
+				ZeichneBmp(t->pos.x, t->pos.y, t->bild, rcGesamt, 2 * t->version, lpDDSBack.texture);
 			else
-				ZeichneBmp(t->pos.x, t->pos.y, t->bild, rcGesamt, t->version, lpDDSBack.tex);
+				ZeichneBmp(t->pos.x, t->pos.y, t->bild, rcGesamt, t->version, lpDDSBack.texture);
 		}
 		else
 		{
 			sprintf(StdString, "%d", t->ziffer);
-			DrawString(StdString, t->pos.x, t->pos.y, t->schriftart, lpDDSBack.tex);
+			DrawString(StdString, t->pos.x, t->pos.y, t->schriftart, lpDDSBack.texture);
 		}
 		t = t->next;
 	}
@@ -226,11 +226,11 @@ void Menueseite::zeige()
 	// TODO
 	// if (CursorTyp == CUKREUZ)
 	// 	ZeichneBmp(MousePosition.x, MousePosition.y,
-	// 			   CursorTyp, rcGesamt, 0, lpDDSBack.tex);
+	// 			   CursorTyp, rcGesamt, 0, lpDDSBack.texture);
 	// else
 	// 	ZeichneBmp(MousePosition.x - Bmp[CursorTyp].Breite / 2,
 	// 			   MousePosition.y - Bmp[CursorTyp].Hoehe / 2,
-	// 			   CursorTyp, rcGesamt, 0, lpDDSBack.tex);
+	// 			   CursorTyp, rcGesamt, 0, lpDDSBack.texture);
 	// Flippen
 	// lpDDSBack.Flip();
 }

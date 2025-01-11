@@ -1,3 +1,4 @@
+#define SDL_MAIN_HANDLED
 #include "panzer.h"
 
 #include <chrono>
@@ -4336,6 +4337,7 @@ void ZeichnePanzer(short i, short Teil)
 
 void ZeichneBmp(short x, short y, short i, RECT, short Version, SDL_Texture *lpDDSNach)
 {
+	if (i < 0) return;
 	SDL_Rect src {
 		.x = Bmp[i].rcSrc.left,
 		.y = Bmp[i].rcSrc.top + Version * Bmp[i].Hoehe,
@@ -5028,7 +5030,7 @@ void BallonAbschuss(short i)
 	Fetz(Ballon.Pos.x, Ballon.Pos.y, BALLONBILD);
 }
 
-void CheckShop(short i)
+bool CheckShop(short i)
 {
 	short erg;
 	short tmpNr;
@@ -5040,7 +5042,7 @@ void CheckShop(short i)
 
 	Menue[AktMenue].putBild(0, MROTER + i);
 
-	while (1)
+	//while (1)
 	{
 		// Mit Aktuellen Werten belegen
 		for (j = 1; j < MUNANZAHL - 1; j++)
@@ -5057,26 +5059,26 @@ void CheckShop(short i)
 		{
 			k = erg / 6;
 			if (Panzer[i].Lager[k + 1] == -1)
-				continue;
+				return false;
 			if ((Anz[k] + Panzer[i].Lager[k + 1] < 9) &&
 				(GKosten + Munition[k + 1].Preis <= Panzer[i].Konto))
 			{
 				GKosten += Munition[k + 1].Preis;
 				Anz[k]++;
 			}
-			continue;
+			return false;
 		}
 		if ((erg % 6 == 0) && (erg <= tmpNr)) // Pfeil nach unten
 		{
 			k = erg / 6 - 1;
 			if (Panzer[i].Lager[k + 1] == -1)
-				continue;
+				return false;
 			if (Anz[k] > 0)
 			{
 				GKosten -= Munition[k + 1].Preis;
 				Anz[k]--;
 			}
-			continue;
+			return false;
 		}
 		if (erg == tmpNr + 2)
 		{
@@ -5094,11 +5096,11 @@ void CheckShop(short i)
 			}
 		}
 		if (erg == tmpNr + 3)
-			return;
+			return true;
 
 		Menue[AktMenue].zeige(); // Menue anzeigen
 	}
-	return;
+	return false;
 }
 
 int CheckMMenue()
@@ -5192,6 +5194,7 @@ short Run()
 	int erg;
 	int i, j;
 	double delta = 0;
+	short shopindex = 0;
 
 	if (Spielzustand == SZNICHTS)
 	{
@@ -5212,6 +5215,14 @@ short Run()
 			{
 			case SDL_QUIT:
 				return 0;
+			}
+
+			if (event.type == SDL_KEYDOWN)
+			{
+				if (event.key.keysym.sym == SDLK_l)
+				{
+					Panzer[1].LebensEnergie = -1;
+				}
 			}
 			if (CheckKey(&event) == 0)
 				return 0; // Das Keyboard abfragen
@@ -5303,6 +5314,7 @@ short Run()
 						}
 						GetMenue();
 						Spielzustand = SZSHOP;
+						shopindex = 0;
 						AktMenue = MENSHOP;
 						StopAllSound();
 						continue;
@@ -5349,19 +5361,25 @@ short Run()
 		}
 		else if (Spielzustand == SZSHOP)
 		{
-			for (i = 0; i < MAXSPIELER; i++)
+			if (!Panzer[shopindex].Aktiv)
 			{
-				if (!Panzer[i].Aktiv)
-					continue;
-
-				if (Panzer[i].Computer)
-					ComputerShop(i);
-				else
-					CheckShop(i);
+				shopindex++;
 			}
-
-			NeuesSpiel();
-			continue;
+			else if (Panzer[shopindex].Computer)
+			{
+				ComputerShop(shopindex++);
+			}
+			else
+			{
+				if (CheckShop(shopindex))
+					shopindex++;
+			}
+				
+			if (shopindex >= MAXSPIELER)
+			{
+				NeuesSpiel();
+			}
+			SDL_RenderCopy(renderer, lpDDSBack.texture, NULL, NULL);
 		}
 		else if (Spielzustand == SZCREDITS)
 		{
@@ -5441,10 +5459,11 @@ static BOOL doInit()
 
 } /* doInit */
 
+
 /*
  * Main - initialization, message loop
  */
-int main(int argc, char **argv)
+int main(int argc, char* argv[])
 {
 	if (!doInit())
 	{

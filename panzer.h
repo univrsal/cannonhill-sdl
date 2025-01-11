@@ -626,7 +626,7 @@ bool LoadGame();																					 // L�dt die Savegamedatei
 void SaveGame();																					 // Speichert die Einstellungen
 void GetMenue();																					 // Holt die Einstellungen aus dem Men�
 void PutMenue();																					 // Stellt die Voreinstellungen ein
-void CheckShop(short i);																			 // Managed den Shop
+bool CheckShop(short i);																			 // Managed den Shop
 int CheckMMenue();																					 // Managed das Hauptmen�
 void ComputerShop(short i);																			 // Der Computer kauft ein
 void PutGMenue();																					 // Stellt das Gewonnenbild ein

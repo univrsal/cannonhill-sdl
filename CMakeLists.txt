@@ -30,6 +30,8 @@ if (WIN32 OR WIN64)
             PRIVATE
             ${SDL2_INCLUDE_DIRS}
     )
+    # enable incremental linking
+    set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES LINK_FLAGS "/INCREMENTAL:YES")
 else()
     find_package(SDL2 REQUIRED)
     target_link_libraries(cannonhill SDL2::SDL2)

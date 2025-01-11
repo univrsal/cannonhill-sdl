@@ -1,4 +1,5 @@
 cmake-*/
+.vs/
 dist/
 .cache/
 .vscode/
