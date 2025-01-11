@@ -48,7 +48,7 @@ void channel::stop()
 void channel::audio_tick(uint8_t *stream, int len)
 {
     bool music = false;
-    uint tmplen = 0;
+    Uint32 tmplen = 0;
     for (auto &clip : m_clips) {
         if (clip.len() > 0) {
             if (clip.fade() && clip.loop()) {
@@ -209,7 +209,7 @@ bool init()
         return false;
     }
 
-    uint devidx = 0;
+    Uint32 devidx = 0;
     bool success = false;
     for (; devidx < devices.size();) {
         active_playback_device = dynamic_pointer_cast<speaker>(devices[devidx++]);

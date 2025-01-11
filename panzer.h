@@ -558,12 +558,14 @@ inline LPDDSURFACEDESC2 DDLoadTexture(SDL_Renderer *renderer, const char *szBitm
 	SDL_FreeFormat(fmt);
 	SDL_FreeSurface(data);
 
-	return {
-		texture,
-		keep_surface ? tmp : nullptr,
-		nullptr,
-		0,
-		false};
+	LPDDSURFACEDESC2 surf {};
+
+	surf.texture = texture;
+	surf.surface = keep_surface ? tmp : nullptr;
+	surf.lpSurface = nullptr;
+	surf.lPitch = 0;
+	surf.locked = false;
+	return surf;
 }
 
 // Deklarationen
