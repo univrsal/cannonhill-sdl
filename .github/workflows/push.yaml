@@ -10,10 +10,14 @@ on:
       - '*'
 permissions:
   contents: write
+env:
+  project: 'cannonhill'
 jobs:
   linux:
     name: Build
     runs-on: ubuntu-latest
+    outputs:
+      commitHash: ${{ steps.setup.outputs.commitHash }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -25,6 +29,13 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libsdl2-dev
           sudo apt-get install -y cmake
+      - name: Setup Environment
+        working-directory: ${{ github.workspace }}/plugin
+        id: setup
+        run: |
+          ## SETUP ENVIRONMENT SCRIPT
+          echo "commitHash=$(git rev-parse HEAD | cut -c1-9)" >> $GITHUB_OUTPUT
+          echo "gitTag=$(git describe --tags --abbrev=0)" >> $GITHUB_OUTPUT
       - name: Configure CMake
         run: |
             cmake -S ${{github.workspace}} -B ${{github.workspace}}/build \
@@ -33,5 +44,5 @@ jobs:
       - name: Upload binary zip
         uses: actions/upload-artifact@v4
         with:
-          name: '${{ env.project }}.${{ env.GIT_TAG }}-${{ env.GIT_HASH }}.linux'
+          name: '${{ env.project }}.${{ steps.setup.outputs.gitTag }}-${{ steps.setup.outputs.commitHash }}.linux'
           path: ${{github.workspace}}/dist/**/*
