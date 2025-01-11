@@ -26,9 +26,10 @@ jobs:
           sudo apt-get install -y libsdl2-dev
           sudo apt-get install -y cmake
       - name: Configure CMake
-        run: cmake -S ${{github.workspace}} -B ${{github.workspace}}/build \
-            -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/dist
-             cmake --build ${{github.workspace}}/build --parallel 4 --target install
+        run: |
+            cmake -S ${{github.workspace}} -B ${{github.workspace}}/build \
+              -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/dist
+            cmake --build ${{github.workspace}}/build --parallel 4 --target install
       - name: Upload binary zip
         uses: actions/upload-artifact@v4
         with:
