@@ -181,7 +181,7 @@ int Menueseite::inputMouse()
 				t->version = 0;
 		}
 		if (t->mouseover)
-			PlaySound(WAVKLICK, 100, MousePosition.x, -1, false, -1);
+			audio_manager->play(audio::CLICK, audio::id::SFX, 100, false);
 		return i;
 	}
 	return -1;

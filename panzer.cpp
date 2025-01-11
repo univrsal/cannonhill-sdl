@@ -3,6 +3,9 @@
 #include <chrono>
 #include <thread>
 
+#include "mixer.hpp"
+#include "audio.hpp"
+
 SDL_Window *window = NULL;
 SDL_Renderer *renderer = NULL;
 
@@ -31,11 +34,7 @@ LPDDSURFACEDESC2 lpDDSTitel;
 
 SDL_PixelFormat ddpf;
 
-// DirectSound
-SDL_AudioStream *lpdsb;
-SDL_AudioStream *lpdsbPrimary;
-SDL_AudioSpec *lpdsbWav[WAVANZ];		  // Wavedateispeicher
-SDL_AudioSpec *lpdsbWavPlay[MAXCHANNELS]; // Wavedateispeicher
+audio::manager* audio_manager{};
 
 BOOL bActive = false;
 int Spielzustand = SZNICHTS;			 // in welchem Zustand ist das Spiel?
@@ -123,9 +122,6 @@ static void finiObjects(void)
 
 void InitDDraw()
 {
-	auto Monitor = 1;//SDL_GetWindowDisplayIndex(window);
-
-
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
 	if (!renderer)
@@ -231,22 +227,22 @@ void InitDSound()
 		return;
 	}
 
+	if (!audio::init())
+	{
+		audio::close();
+		Soundzustand = 0;
+		return;
+	}
+	audio_manager = new audio::manager();
+	audio_manager->init();
+
 	Soundzustand = 1; // Sound anschalten
-
-	// Set up the audio stream
-
-	// // Die Buffer machen
-	// for (i = 0; i < MAXCHANNELS; i++)
-	// {
-	// 	lpds->CreateSoundBuffer(&dsbdesc, &lpdsbWavPlay[i], NULL);
-	// }
 }
 
 void LoadSound(short Sound)
 {
 	// Datei �ffnen
 	// TODO
-	// auto *wav = SDL_LoadWAV(Wav[Sound].Dateiname);
 	// DateiHandle = mmioOpen(Wav[Sound].Dateiname, NULL, MMIO_READ | MMIO_ALLOCBUF);
 
 	// lpds->CreateSoundBuffer(&dsbdesc, &lpdsbWav[Sound], NULL);
@@ -320,10 +316,8 @@ void StopSound(short Channel)
 
 void StopAllSound()
 {
-	short i;
-
-	for (i = 0; i < MAXCHANNELS; i++)
-		StopSound(i);
+	audio::manager::stop_channel(audio::id::SFX);
+	audio::manager::stop_channel(audio::id::MUSIC);
 }
 
 void SetAcquire()
@@ -1188,8 +1182,8 @@ void InitStructs(short zustand)
 			Munition[i].MaxDamage = 0;
 			Munition[i].Dauer = -1;
 			Munition[i].Preis = 0;
-			Munition[i].FlugSound = 0;
-			Munition[i].AbschussSound = 0;
+			Munition[i].FlugSound = audio::NO_SOUND;
+			Munition[i].AbschussSound = audio::NO_SOUND;
 		};
 		Munition[MUNRAKETE].Bild = MUNNULL;
 		Munition[MUNRAKETE].Explosion = EXPEXPLOSION;
@@ -1197,7 +1191,7 @@ void InitStructs(short zustand)
 		Munition[MUNRAKETE].Smoke[1] = SMOKEFEUER;
 		Munition[MUNRAKETE].MaxDamage = 300;
 		Munition[MUNRAKETE].Preis = 70;
-		Munition[MUNRAKETE].FlugSound = WAVRAKETE;
+		Munition[MUNRAKETE].FlugSound = audio::ROCKET;
 
 		Munition[MUNSTEIN].Bild = MUNZWEI;
 		Munition[MUNSTEIN].Explosion = EXPKRATER;
@@ -1207,7 +1201,7 @@ void InitStructs(short zustand)
 		Munition[MUNSCHILD].Bild = MUNEINS;
 		Munition[MUNSCHILD].Dauer = 500;
 		Munition[MUNSCHILD].Preis = 200;
-		Munition[MUNSCHILD].AbschussSound = WAVSCHILD;
+		Munition[MUNSCHILD].AbschussSound = audio::SHIELD;
 
 		Munition[MUNGRANATE].Bild = MUNDREI;
 		Munition[MUNGRANATE].Explosion = EXPGRANATE;
@@ -1215,19 +1209,19 @@ void InitStructs(short zustand)
 		Munition[MUNGRANATE].MaxDamage = 300;
 		Munition[MUNGRANATE].Dauer = 100;
 		Munition[MUNGRANATE].Preis = 80;
-		Munition[MUNGRANATE].FlugSound = WAVKNISTERN;
+		Munition[MUNGRANATE].FlugSound = audio::CRACKLING;
 
 		Munition[MUNLASER].Bild = MUNVIER;
 		Munition[MUNLASER].MaxDamage = 500;
 		Munition[MUNLASER].Dauer = 10;
 		Munition[MUNLASER].Preis = 250;
-		Munition[MUNLASER].AbschussSound = WAVLASER;
+		Munition[MUNLASER].AbschussSound = audio::LASER;
 
 		Munition[MUNGEWEHR].Bild = MUNFUENF;
 		Munition[MUNGEWEHR].Explosion = EXPSPLITTER;
 		Munition[MUNGEWEHR].MaxDamage = 300;
 		Munition[MUNGEWEHR].Preis = 150;
-		Munition[MUNGEWEHR].AbschussSound = WAVGEWEHR;
+		Munition[MUNGEWEHR].AbschussSound = audio::RIFLE;
 
 		Munition[MUNFASS].Bild = MUNSECHS;
 		Munition[MUNFASS].Explosion = EXPFASS;
@@ -1244,12 +1238,12 @@ void InitStructs(short zustand)
 		Munition[MUNMAGRAKETE].Smoke[1] = SMOKEFEUER;
 		Munition[MUNMAGRAKETE].MaxDamage = 300;
 		Munition[MUNMAGRAKETE].Preis = 155;
-		Munition[MUNMAGRAKETE].FlugSound = WAVRAKETE;
+		Munition[MUNMAGRAKETE].FlugSound = audio::ROCKET;
 
 		Munition[MUNMAGNET].Bild = MUNNEUN;
 		Munition[MUNMAGNET].Dauer = 500;
 		Munition[MUNMAGNET].Preis = 180;
-		Munition[MUNMAGNET].AbschussSound = WAVMAGNETSCHILD;
+		Munition[MUNMAGNET].AbschussSound = audio::MAGNET_SHIELD;
 
 		Munition[MUNMEGA].Bild = MUNZEHN;
 		Munition[MUNMEGA].Explosion = EXPMEGA;
@@ -1685,9 +1679,11 @@ void InitStructs(short zustand)
 
 void CheckMouse(SDL_Event *event)
 {
+	static Uint32 LastMouseSound = 0;
+	static Uint32 SoundID = 0;
 	Sint32 xDiff{}, yDiff{}; // Die Differenz zur vorherigen Position ((F�r Scrollen)
 	ZWEID Pos;
-	short Entf;
+	float Entf;
 
 	if (event->type == SDL_MOUSEMOTION)
 	{
@@ -1708,12 +1704,13 @@ void CheckMouse(SDL_Event *event)
 	if (MousePosition.y > MAXY - Bmp[CursorTyp].Hoehe)
 		MousePosition.y = MAXY - Bmp[CursorTyp].Hoehe;
 
-	Entf = short(sqrt(xDiff * xDiff + yDiff * yDiff));
-	if (Entf > 10)
-		PlaySound(WAVMOUSEEINS,
-				  60 + Entf * 40 / 100,
-				  MousePosition.x,
-				  -1, false, -1);
+	Entf = sqrt(xDiff * xDiff + yDiff * yDiff);
+	printf("%f\n", Entf);
+	if (Entf > 2 && SDL_GetTicks() - LastMouseSound > 10) {
+		LastMouseSound = SDL_GetTicks();
+		audio_manager->play(static_cast<audio::file>(audio::MOUSE1 + SoundID++), audio::id::SFX, 30);
+		SoundID %= 4;
+	}
 
 	CursorTyp = CUKREUZ;
 
@@ -2739,12 +2736,9 @@ void CheckMunListe()
 		if ((MunListe[i].Besitzer != -1) && (Munition[MunListe[i].p.Art].FlugSound != 0))
 		{
 			if (Bild % (LastBild / 10 + 1) == 0) // nur 10 mal in der sek aktualisieren
-				MunListe[i].SoundBuffer = PlaySound(Munition[MunListe[i].p.Art].FlugSound,
-													100,
-													MunListe[i].p.Pos.x,
-													MunListe[i].SoundBuffer,
-													true,
-													500 + short(MunListe[i].p.v.x * MunListe[i].p.v.x + MunListe[i].p.v.y * MunListe[i].p.v.y));
+				MunListe[i].SoundBuffer = Munition[MunListe[i].p.Art].FlugSound;
+				audio_manager->play(Munition[MunListe[i].p.Art].FlugSound,
+					audio::id::SFX, 100, true);
 		}
 
 		// Smoke
@@ -3016,7 +3010,7 @@ void CheckBallon()
 		Ballon.Anzahl = (rand() % 3) + 1;
 		Ballon.Rel.x = 0.5;
 		Ballon.Rel.y = 0.5;
-		PlaySound(WAVFALLSCHIRM, 100, Ballon.Pos.x, -1, false, -1);
+		audio_manager->play(audio::PARACHUTE, audio::id::SFX, 100, false);
 		return;
 	}
 	if (!Ballon.Aktiv)
@@ -3090,8 +3084,8 @@ void Abschuss(short i)
 		 (Panzer[i].Lager[Panzer[i].Munition] == -1)))
 	{
 		if (Munition[Panzer[i].Munition].AbschussSound != 0)
-			PlaySound(Munition[Panzer[i].Munition].AbschussSound,
-					  100, Panzer[i].p.Pos.x, -1, false, -1);
+			audio_manager->play(Munition[Panzer[i].Munition].AbschussSound,
+					  audio::id::SFX, 100);
 
 		if (Panzer[i].Munition == MUNSCHILD)
 		{
@@ -3949,7 +3943,7 @@ void InitCredits()
 	lpDDSScape.unlock();
 
 	// Sound abspielen
-	PlaySound(WAVCREDITSMUSIK, 100, MAXX / 2, -1, true, -1);
+	audio_manager->play(audio::CREDITS_MUSIC, audio::id::MUSIC, 100, true);
 }
 
 void CheckCredits()
@@ -4004,8 +3998,6 @@ void CheckCredits()
 	x = MAXX / 2 - Bmp[Bild].Breite / 2;
 	Material = 1 + (rand() % 5);
 
-	// Sound
-	PlaySound(WAVCREDITS, 100, MAXX / 2, -1, false, -1);
 
 	Bmp[Bild].Surface.lock(); // Eigentlich hier ddsdsonstiges
 	lpDDSScape.lock();
@@ -4115,6 +4107,7 @@ void MakeTitel()
 	rcRectdes.right = MAXX;
 	rcRectdes.bottom = MAXY;
 	SDL_RenderCopy(renderer, lpDDSTitel.texture, NULL, NULL);
+
 
 	// PlaySound(WAVTITELMUSIK, 100, MAXX / 2, -1, true, -1);
 }
@@ -4591,7 +4584,7 @@ void PanzerExpl(short PanzNr)
 {
 	short i, j;
 
-	PlaySound(WAVPANZER, 100, Panzer[PanzNr].p.Pos.x, -1, false, -1);
+	audio_manager->play(audio::TANK, audio::id::SFX, 100);
 
 	// Splitter
 	for (i = 0; i <= 10; i++)
@@ -4629,7 +4622,7 @@ void Explosion(short MunNr)
 
 	if (Munition[MunListe[MunNr].p.Art].Explosion == EXPKRATER)
 	{
-		PlaySound(WAVSTEIN, 100, MunListe[MunNr].p.Pos.x, -1, false, -1);
+		audio_manager->play(audio::STONE, audio::id::SFX, 100);
 
 		for (Relx = -10; Relx <= 10; Relx++)
 			for (Rely = -10; Rely <= 10; Rely++)
@@ -4667,7 +4660,7 @@ void Explosion(short MunNr)
 	else if (Munition[MunListe[MunNr].p.Art].Explosion == EXPEXPLOSION)
 	{
 		// Sound
-		PlaySound(WAVEXPLOSIONG, 100, MunListe[MunNr].p.Pos.x, -1, false, -1);
+		audio_manager->play(audio::EXPLOSION, audio::id::SFX, 100);
 
 		for (Relx = -20; Relx <= 20; Relx++)
 			for (Rely = -20; Rely <= 20; Rely++)
@@ -4699,7 +4692,7 @@ void Explosion(short MunNr)
 	}
 	else if (Munition[MunListe[MunNr].p.Art].Explosion == EXPGRANATE)
 	{
-		PlaySound(WAVGRANATE, 100, MunListe[MunNr].p.Pos.x, -1, false, -1);
+		audio_manager->play(audio::GRENADE, audio::id::SFX, 100);
 
 		for (Relx = -10; Relx <= 10; Relx++)
 			for (Rely = -10; Rely <= 10; Rely++)
@@ -4748,9 +4741,9 @@ void Explosion(short MunNr)
 	else if (Munition[MunListe[MunNr].p.Art].Explosion == EXPSPLITTER)
 	{
 		if (MunListe[MunNr].p.Art == MUNGEWEHR)
-			PlaySound(WAVQUERSCHUSS, 100, MunListe[MunNr].p.Pos.x, -1, false, -1);
+			audio_manager->play(audio::RICOCHET, audio::id::SFX, 100);
 		else
-			PlaySound(WAVSPLITTER, 100, MunListe[MunNr].p.Pos.x, -1, false, -1);
+			audio_manager->play(audio::SPLINTER, audio::id::SFX, 100);
 
 		for (Relx = -5; Relx <= 5; Relx++)
 			for (Rely = -5; Rely <= 5; Rely++)
@@ -4787,7 +4780,7 @@ void Explosion(short MunNr)
 	}
 	else if (Munition[MunListe[MunNr].p.Art].Explosion == EXPFASS)
 	{
-		PlaySound(WAVSAEURE, 100, MunListe[MunNr].p.Pos.x, -1, false, -1);
+		audio_manager->play(audio::ACID, audio::id::SFX, 100);
 
 		// S�ure
 		for (Relx = -10; Relx <= 10; Relx++)
@@ -4999,7 +4992,7 @@ void BallonAbschuss(short i)
 
 	if (i != -1)
 	{
-		PlaySound(WAVFALLSCHIRMZWEI, 100, Ballon.Pos.x, -1, false, -1);
+		audio_manager->play(audio::PARACHUTE2, audio::id::SFX, 100);
 
 		if (Panzer[i].Lager[Ballon.Munition] == -1)
 			return;
@@ -5008,7 +5001,7 @@ void BallonAbschuss(short i)
 			Panzer[i].Lager[Ballon.Munition] = 9;
 	}
 	else
-		PlaySound(WAVSAEURE, 100, Ballon.Pos.x, -1, false, -1);
+		audio_manager->play(audio::ACID, audio::id::SFX, 100);
 	// Explosion
 	Fetz(Ballon.Pos.x, Ballon.Pos.y, BALLONBILD);
 }
@@ -5065,7 +5058,7 @@ void CheckShop(short i)
 		}
 		if (erg == tmpNr + 2)
 		{
-			PlaySound(WAVKASSE, 100, MousePosition.x, -1, false, -1);
+			audio_manager->play(audio::REGISTER, audio::id::SFX, 100);
 
 			for (j = 1; j < MUNANZAHL - 1; j++)
 			{
@@ -5185,6 +5178,7 @@ short Run()
 
 	SDL_Event event{};
 
+	audio_manager->play(audio::TITLE_MUSIC, audio::id::MUSIC, 255, true);
 	while (1)
 	{
 		auto Button0downbefore = Button0down;
@@ -5236,6 +5230,7 @@ short Run()
 					Panzer[j].RGewonnen++;
 					StopAllSound();
 					PlaySound(WAVYIPPEE, 100, Panzer[j].p.Pos.x, -1, false, -1);
+					audio_manager->play(audio::YIPPIEE, audio::id::SFX, 100, false);
 				}
 
 				if (Bild % (LastBild / 30 + 1) == 0) // unabh�nig von der Framerate
@@ -5281,7 +5276,7 @@ short Run()
 							AktMenue = MENGGEWONNEN;
 							PutGMenue();
 							StopAllSound();
-							PlaySound(WAVAPPLAUS, 100, MAXX / 2, -1, false, -1);
+							audio_manager->play(audio::APPLAUSE, audio::id::SFX, 255, false);
 							continue;
 						}
 						GetMenue();
@@ -5380,7 +5375,7 @@ short Run()
 		if (Bild % 30 == 0)
 		{
 			// fps rausfinden
-			printf("fps: %f\n", 1.0 / diff_ms);
+			// printf("fps: %f\n", 1.0 / diff_ms);
 		}
 	}
 	return (1);

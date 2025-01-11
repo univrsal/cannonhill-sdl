@@ -13,6 +13,8 @@
 #include <fstream>
 #include <fcntl.h>
 
+#include "audio.hpp"
+
 #define NAME "Panzer"
 #define TITLE "Panzer"
 #define INITGUID
@@ -227,6 +229,7 @@ using BOOL = bool;
 using SHORT = short;
 using CHAR = char;
 extern SDL_Renderer* renderer;
+extern audio::manager* audio_manager;
 
 struct RECT
 {
@@ -403,8 +406,8 @@ struct MUNITION
 	short MaxDamage; // Wieviel Schaden richtet sie maximal an?
 	short Dauer;
 	short Preis; // Wieviel kostet diese Waffe?
-	short FlugSound;
-	short AbschussSound;
+	audio::file FlugSound;
+	audio::file AbschussSound;
 };
 
 struct MUNLISTE

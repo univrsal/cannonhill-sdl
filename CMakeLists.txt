@@ -4,7 +4,7 @@ project(cannonhill LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(cannonhill menue.cpp panzer.cpp panzer.h)
+add_executable(cannonhill menue.cpp panzer.cpp panzer.h audio.cpp audio.hpp mixer.cpp mixer.hpp)
 
 # find sdl2
 find_package(SDL2 REQUIRED)
