@@ -70,5 +70,5 @@ jobs:
       - name: Upload binary zip
         uses: actions/upload-artifact@v4
         with:
-          name: '${{ env.project }}.${{ steps.setup.outputs.commitHash }}.linux'
+          name: '${{ env.project }}.${{ steps.setup.outputs.commitHash }}.windows'
           path: ${{github.workspace}}/dist/**/*
