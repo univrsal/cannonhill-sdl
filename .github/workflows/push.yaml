@@ -14,7 +14,7 @@ env:
   project: 'cannonhill'
 jobs:
   linux:
-    name: Build
+    name: Build Linux
     runs-on: ubuntu-latest
     outputs:
       commitHash: ${{ steps.setup.outputs.commitHash }}
@@ -33,7 +33,6 @@ jobs:
         working-directory: ${{ github.workspace }}
         id: setup
         run: |
-          ## SETUP ENVIRONMENT SCRIPT
           echo "commitHash=$(git rev-parse HEAD | cut -c1-9)" >> $GITHUB_OUTPUT
           echo "gitTag=$(git describe --tags --abbrev=0)" >> $GITHUB_OUTPUT
       - name: Configure CMake
@@ -47,7 +46,7 @@ jobs:
           name: '${{ env.project }}.${{ steps.setup.outputs.gitTag }}-${{ steps.setup.outputs.commitHash }}.linux'
           path: ${{github.workspace}}/dist/**/*
   windows:
-    name: Build
+    name: Build Windows
     runs-on: windows-latest
     outputs:
       commitHash: ${{ steps.setup.outputs.commitHash }}
@@ -61,9 +60,10 @@ jobs:
         working-directory: ${{ github.workspace }}
         id: setup
         run: |
-          ## SETUP ENVIRONMENT SCRIPT
-          echo "commitHash=$(git rev-parse HEAD | cut -c1-9)" >> $GITHUB_OUTPUT
-          echo "gitTag=$(git describe --tags --abbrev=0)" >> $GITHUB_OUTPUT
+          $CommitHash = (git rev-parse HEAD)[0..8] -join ''
+          $GitTag = git describe --tags --abbrev=0
+          "commitHash=${CommitHash}" >> $env:GITHUB_OUTPUT
+          "gitTag=${GitTag}" >> $env:GITHUB_OUTPUT
       - name: Configure CMake
         run: |
           cmake -S ${{github.workspace}} -B ${{github.workspace}}/build \
