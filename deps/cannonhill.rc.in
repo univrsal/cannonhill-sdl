@@ -1,0 +1,19 @@
+IDI_ICON1 ICON DISCARDABLE "${CMAKE_SOURCE_DIR}/deps/icon.ico"
+
+1 VERSIONINFO
+FILEVERSION ${CMAKE_PROJECT_VERSION_MAJOR},${CMAKE_PROJECT_VERSION_MINOR},${CMAKE_PROJECT_VERSION_PATCH},0
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "040904B0"
+    BEGIN
+      VALUE "FileDescription", "SDL2 port of the original Cannonhill game"
+      VALUE "FileVersion", "${CMAKE_PROJECT_VERSION}"
+      VALUE "InternalName", "cannonhill"
+      VALUE "OriginalFilename", "cannonhill"
+      VALUE "ProductName", "Cannonhill"
+      VALUE "ProductVersion", "${CMAKE_PROJECT_VERSION}"
+      VALUE "Comments", "Cannonhill"
+    END
+  END
+END

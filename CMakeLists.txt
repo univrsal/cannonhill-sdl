@@ -10,6 +10,8 @@ if (WIN32 OR WIN64)
     if (MSVC)
         add_definitions(/MP /d2FH4-)
     endif()
+    configure_file(${CMAKE_SOURCE_DIR}/deps/cannonhill.rc.in ${PROJECT_BINARY_DIR}/cannonhill.rc)
+    set(PLATFORM_SRC "${PROJECT_BINARY_DIR}/vis.rc")
 
     # Copy dependencies
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
@@ -17,7 +19,7 @@ if (WIN32 OR WIN64)
             ${SDL2_DLLS}
             $<TARGET_FILE_DIR:${PROJECT_NAME}>)
 
-    install(FILES ${SDL2_DLLS} DESTINATION
+    install(FILES ${SDL2_DLLS} DESTINATION .
             CONFIGURATIONS RelWithDebInfo Debug Release
     )
     target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
@@ -33,7 +35,8 @@ else()
     target_link_libraries(cannonhill SDL2::SDL2)
 endif()
 
-install(DIRECTORY res/audio DESTINATION CONFIGURATIONS RelWithDebInfo Debug Release)
-install(DIRECTORY res/img DESTINATION CONFIGURATIONS RelWithDebInfo Debug Release)
-install(FILES res/icon.bmp DESTINATION CONFIGURATIONS RelWithDebInfo Debug Release)
-install(FILES res/icon1.ico DESTINATION CONFIGURATIONS RelWithDebInfo Debug Release)
+install(TARGETS cannonhill CONFIGURATIONS RelWithDebInfo Debug Release DESTINATION .)
+install(DIRECTORY res/audio DESTINATION . CONFIGURATIONS RelWithDebInfo Debug Release)
+install(DIRECTORY res/img DESTINATION . CONFIGURATIONS RelWithDebInfo Debug Release)
+install(FILES res/icon.bmp DESTINATION . CONFIGURATIONS RelWithDebInfo Debug Release)
+install(FILES res/icon1.ico DESTINATION . CONFIGURATIONS RelWithDebInfo Debug Release)
