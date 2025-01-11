@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.26)
 
 project(cannonhill LANGUAGES CXX)
 add_subdirectory(deps)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 add_executable(cannonhill menue.cpp panzer.cpp panzer.h audio.cpp audio.hpp mixer.cpp mixer.hpp)
 
