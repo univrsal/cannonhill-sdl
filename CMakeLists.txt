@@ -32,3 +32,8 @@ else()
     find_package(SDL2 REQUIRED)
     target_link_libraries(cannonhill SDL2::SDL2)
 endif()
+
+install(DIRECTORY res/audio DESTINATION CONFIGURATIONS RelWithDebInfo Debug Release)
+install(DIRECTORY res/img DESTINATION CONFIGURATIONS RelWithDebInfo Debug Release)
+install(FILES res/icon.bmp DESTINATION CONFIGURATIONS RelWithDebInfo Debug Release)
+install(FILES res/icon1.ico DESTINATION CONFIGURATIONS RelWithDebInfo Debug Release)

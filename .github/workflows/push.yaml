@@ -1,0 +1,35 @@
+name: Push to master
+run-name: ${{ github.ref_name }} push run 🚀
+on:
+  push:
+    branches:
+      - 'sdl2-port'
+      - 'release/**'
+    tags:
+      - '*'
+permissions:
+  contents: write
+jobs:
+  linux:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          path: ${{ github.workspace }}
+        ref: ${{ github.ref }}
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsdl2-dev
+          sudo apt-get install -y cmake
+      - name: Configure CMake
+        run: cmake -S ${{github.workspace}} -B ${{github.workspace}}/build \
+            -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/dist
+             cmake --buold ${{github.workspace}}/build --parallel 4 --target install
+      - name: Upload binary zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: '${{ env.project }}.${{ env.GIT_TAG }}-${{ env.GIT_HASH }}.linux'
+          path: ${{github.workspace}}/dist/**/*
