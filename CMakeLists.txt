@@ -36,7 +36,7 @@ else()
 endif()
 
 install(TARGETS cannonhill CONFIGURATIONS RelWithDebInfo Debug Release DESTINATION .)
-install(DIRECTORY res/audio DESTINATION . CONFIGURATIONS RelWithDebInfo Debug Release)
+install(DIRECTORY res/sounds DESTINATION . CONFIGURATIONS RelWithDebInfo Debug Release)
 install(DIRECTORY res/img DESTINATION . CONFIGURATIONS RelWithDebInfo Debug Release)
 install(FILES res/icon.bmp DESTINATION . CONFIGURATIONS RelWithDebInfo Debug Release)
 install(FILES res/icon1.ico DESTINATION . CONFIGURATIONS RelWithDebInfo Debug Release)
