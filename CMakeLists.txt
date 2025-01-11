@@ -39,4 +39,3 @@ install(TARGETS cannonhill CONFIGURATIONS RelWithDebInfo Debug Release DESTINATI
 install(DIRECTORY res/sounds DESTINATION . CONFIGURATIONS RelWithDebInfo Debug Release)
 install(DIRECTORY res/img DESTINATION . CONFIGURATIONS RelWithDebInfo Debug Release)
 install(FILES res/icon.bmp DESTINATION . CONFIGURATIONS RelWithDebInfo Debug Release)
-install(FILES res/icon.ico DESTINATION . CONFIGURATIONS RelWithDebInfo Debug Release)
