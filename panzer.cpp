@@ -1,4 +1,7 @@
+#if _WIN32
 #include "SDL_Main.h"
+#endif
+
 #include "panzer.h"
 
 #include <chrono>
