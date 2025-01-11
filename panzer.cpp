@@ -6,7 +6,6 @@
 SDL_Window *window = NULL;
 SDL_Renderer *renderer = NULL;
 
-LPDDSURFACEDESC2 lpDDSPrimary{};
 LPDDSURFACEDESC2 lpDDSBack{};
 SDL_Cursor *lpDDSCursor = NULL;
 
@@ -134,8 +133,7 @@ void InitDDraw()
 		return;
 	}
 
-	// Create the primary surface with 1 back buffer
-	lpDDSPrimary.texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, MAXX, MAXY);
+	// Create the back buffer
 	lpDDSBack.texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, MAXX, MAXY);
 
 	// Create the texture for the landscape
@@ -146,7 +144,7 @@ void InitDDraw()
 	SDL_UpdateTexture(lpDDSScape.texture, NULL, surf->pixels, surf->pitch);
 	SDL_FreeSurface(surf);
 
-	if (!lpDDSPrimary.texture || !lpDDSScape.texture)
+	if (!lpDDSScape.texture)
 	{
 		return;
 	}
@@ -156,6 +154,11 @@ void InitDDraw()
 	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
 	SDL_RenderClear(renderer);
 	SDL_SetRenderTarget(renderer, NULL);
+
+	// Load icon
+	surf = SDL_LoadBMP("img/icon.bmp");
+	SDL_SetWindowIcon(window, surf);
+	SDL_FreeSurface(surf);
 
 
 	// In diese Surface sollen die Cursor geladen werden
@@ -535,7 +538,8 @@ void InitStructs(short zustand)
 
 	if (zustand == 0)
 	{
-		Tansparent = RGB2DWORD(255, 0, 255);
+		// transparent = ARGB(0, 0, 0, 0);
+		Tansparent = 0;
 		Bild = 1;
 		LastBild = 25;
 		MouseSoundBuffer = -1;
@@ -2270,7 +2274,8 @@ void PutPixel(short x, short y, DWORD color, LPDDSURFACEDESC2 *ddsdtmp)
 	SDL_assert(pixels != nullptr);
 
 	// convert rgb to rgba
-	color = (color << 8) | 0xFF;
+	if (color != 0)
+		color = (color << 8) | 0xFF;
 	pixels[y * pitch + x] = color;
 }
 
@@ -3640,7 +3645,7 @@ void MakePixel(short x, short y, short Typ, short vx, short vy, bool Active, lon
 		auto r = col & 0xFF;
 		auto g = (col >> 8) & 0xFF;
 		auto b = (col >> 16) & 0xFF;
-		b -= 75;
+		b -= 75; // TODO: This is a hack
 
 		col = SDL_MapRGB(Bmp[TEXFELS].Surface.surface->format, r, g, b);
 		Pixel[x][y].Farbe = col;
@@ -3831,6 +3836,14 @@ void NeuesSpiel()
 	AktRunde++;
 	Menue[AktMenue].putZiffer(2, AktRunde);
 
+	lpDDSScape.clear();
+
+	lpDDSScape.lock();
+	for (int x = 0; x < MAXX; x++)
+        for (int y = 0; y < MAXY; y++)
+			lpDDSScape.lpSurface[y * (lpDDSScape.lPitch/4) + x] = 0;
+	lpDDSScape.unlock();
+
 	// Windbeschleunigung
 	if (Windschalter)
 		Wind.x = rand() % 7 - 3;
@@ -3852,7 +3865,6 @@ void NeuesSpiel()
 	rcRectdes.top = 0;
 	rcRectdes.right = MAXX;
 	rcRectdes.bottom = MAXY;
-	// lpDDSPrimary.Blt(&rcRectdes, &lpDDSMBack, &rcRectdes);
 	rcRectsrc.left = Bmp[MLADESPIEL].rcSrc.left;
 	rcRectsrc.top = Bmp[MLADESPIEL].rcSrc.top;
 	rcRectsrc.right = Bmp[MLADESPIEL].rcSrc.right;
@@ -3861,7 +3873,6 @@ void NeuesSpiel()
 	rcRectdes.top = MAXY / 2 - Bmp[MLADESPIEL].Hoehe / 2;
 	rcRectdes.right = rcRectdes.top + Bmp[MLADESPIEL].Breite;
 	rcRectdes.bottom = rcRectdes.top + Bmp[MLADESPIEL].Hoehe;
-	lpDDSPrimary.Blt(&rcRectdes, &Bmp[MLADESPIEL].Surface, &rcRectsrc);
 	rcRectdes.left = 0;
 	rcRectdes.top = 0;
 	rcRectdes.right = MAXX;
@@ -4103,10 +4114,7 @@ void MakeTitel()
 	rcRectdes.top = 0;
 	rcRectdes.right = MAXX;
 	rcRectdes.bottom = MAXY;
-	// Blitten(lpDDSTitel.texture, lpDDSPrimary.texture, false);
 	SDL_RenderCopy(renderer, lpDDSTitel.texture, NULL, NULL);
-
-	// lpDDSPrimary.Blt(NULL, NULL, NULL);
 
 	// PlaySound(WAVTITELMUSIK, 100, MAXX / 2, -1, true, -1);
 }

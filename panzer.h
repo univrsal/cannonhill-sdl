@@ -222,7 +222,7 @@
 #define SMOKEFEUER 2
 
 using BYTE = unsigned char;
-using DWORD = unsigned long;
+using DWORD = Uint32;
 using BOOL = bool;
 using SHORT = short;
 using CHAR = char;
@@ -298,7 +298,7 @@ struct LPDDSURFACEDESC2
 		SDL_SetRenderTarget(renderer, texture);
 		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
 		SDL_RenderClear(renderer);
-		SDL_SetRenderTarget(renderer, NULL);
+		SDL_SetRenderTarget(renderer, nullptr);
 	}
 };
 struct ZWEID
