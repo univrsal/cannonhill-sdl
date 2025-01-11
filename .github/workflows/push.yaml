@@ -61,7 +61,7 @@ jobs:
         id: setup
         run: |
           $CommitHash = (git rev-parse HEAD)[0..8] -join ''
-          $GitTag = git describe --tags --abbrev=0
+          $GitTag = git describe --tags --abbrev=0 || echo "0.0.1"
           "commitHash=${CommitHash}" >> $env:GITHUB_OUTPUT
           "gitTag=${GitTag}" >> $env:GITHUB_OUTPUT
       - name: Configure CMake
