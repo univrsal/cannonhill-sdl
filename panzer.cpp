@@ -5037,14 +5037,13 @@ bool CheckShop(short i)
 {
 	short erg;
 	short tmpNr;
-	short GKosten = 0;
-	short Anz[MUNANZAHL - 2] = {0};
+	static short GKosten[MAXSPIELER] {};
+	static short Anz[MUNANZAHL - 2] {};
 	short j, k;
 
 	tmpNr = (MUNANZAHL - 2) * 6 + 1;
 
 	Menue[AktMenue].putBild(0, MROTER + i);
-
 	//while (1)
 	{
 		// Mit Aktuellen Werten belegen
@@ -5054,7 +5053,7 @@ bool CheckShop(short i)
 			Menue[AktMenue].putZiffer(4 + (j - 1) * 6, Anz[j - 1]);
 		}
 		Menue[AktMenue].putZiffer(tmpNr, Panzer[i].Konto);
-		Menue[AktMenue].putZiffer(tmpNr + 1, GKosten);
+		Menue[AktMenue].putZiffer(tmpNr + 1, GKosten[i]);
 
 		erg = Menue[AktMenue].inputMouse(); // Mausaktionen abfragen
 
@@ -5064,9 +5063,9 @@ bool CheckShop(short i)
 			if (Panzer[i].Lager[k + 1] == -1)
 				return false;
 			if ((Anz[k] + Panzer[i].Lager[k + 1] < 9) &&
-				(GKosten + Munition[k + 1].Preis <= Panzer[i].Konto))
+				(GKosten[i] + Munition[k + 1].Preis <= Panzer[i].Konto))
 			{
-				GKosten += Munition[k + 1].Preis;
+				GKosten[i] += Munition[k + 1].Preis;
 				Anz[k]++;
 			}
 			return false;
@@ -5078,7 +5077,7 @@ bool CheckShop(short i)
 				return false;
 			if (Anz[k] > 0)
 			{
-				GKosten -= Munition[k + 1].Preis;
+				GKosten[i] -= Munition[k + 1].Preis;
 				Anz[k]--;
 			}
 			return false;
@@ -5091,12 +5090,13 @@ bool CheckShop(short i)
 			{
 				for (k = Anz[j - 1]; k > 0; k--)
 				{
-					GKosten -= Munition[j].Preis;
 					Panzer[i].Konto -= Munition[j].Preis;
 					Panzer[i].Lager[j]++;
 				}
 				Anz[j - 1] = 0;
 			}
+			GKosten[i] = 0;
+			return true;
 		}
 		if (erg == tmpNr + 3)
 			return true;
