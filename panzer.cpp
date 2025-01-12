@@ -2275,18 +2275,6 @@ inline void DWORD2RGB(DWORD color)
 	rgbStruct.b = (BYTE)color & 0xFF;
 }
 
-void DrawPixel(short x, short y, DWORD color)
-{
-	if ((x >= MAXX) || (x < 0) || (y >= MAXY) || (y < 0))
-		return;
-
-
-	// convert rgb to rgba
-	color = (color << 8) | 0xFF;
-	SDL_SetRenderDrawColor(renderer, (color >> 16) & 0xFF, (color >> 8) & 0xFF, color & 0xFF, 0xFF);
-	SDL_RenderDrawPoint(renderer, x, y);
-}
-
 void PutPixel(short x, short y, DWORD color, LPDDSURFACEDESC2 *ddsdtmp)
 {
 	if ((x >= MAXX) || (x < 0) || (y >= MAXY) || (y < 0))
@@ -2920,7 +2908,6 @@ void CheckFXPixel()
 {
 	short i;
 	ZWEID neu;
-
 	for (i = LastFX; i >= 0; i--)
 	{
 		if ((FXListe[i].Pos.x == -1) || (FXListe[i].Pos.y == -1))
@@ -2969,8 +2956,8 @@ void CheckFXPixel()
 				}
 			}
 			if (i <= LastFX)
-				DrawPixel(FXListe[i].Pos.x, FXListe[i].Pos.y,
-						 FXListe[i].Farbe);
+				PutPixel(FXListe[i].Pos.x, FXListe[i].Pos.y,
+						 FXListe[i].Farbe, &lpDDSScape); // Pixel in die Surface malen
 		}
 		else
 		{
@@ -5294,9 +5281,9 @@ short Run()
 			CheckMunListe();					 // Geschosse berechnen
 			MakeWetter();						 // Wetter erzeugen
 			FindActivePixel();					 // Pixel berechnen
+			lpDDSScape.unlock();
 			if (Bild % (LastBild / 10 + 1) == 0) // unabh�nig von der Framerate
 				CheckFXPixel();					 // EffektPixel �berpr�fen
-			lpDDSScape.unlock();
 
 			if (AktMenue != -1) // ein Overlaymen� vorhanden
 			{
