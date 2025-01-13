@@ -538,19 +538,19 @@ inline SDL_Surface *DDLoadBitmap(const char *szBitmap, int dx, int dy)
 	return data;
 }
 
-inline LPDDSURFACEDESC2 DDLoadTexture(SDL_Renderer *renderer, const char *szBitmap, int dx = 0, int dy = 0, BYTE r = 255, BYTE g = 0, BYTE b = 255, bool keep_surface = false)
+inline LPDDSURFACEDESC2 DDLoadTexture(SDL_Renderer *renderer, const char *szBitmap, int dx = 0, int dy = 0, BYTE r = 255, BYTE g = 0, BYTE b = 255, bool keep_surface = false, int format = SDL_PIXELFORMAT_ARGB8888)
 {
 	SDL_Surface *data = SDL_LoadBMP(szBitmap);
 
-	auto* fmt = SDL_AllocFormat(SDL_PIXELFORMAT_ARGB8888);
+	auto* fmt = SDL_AllocFormat(format);
 	auto* tmp = SDL_ConvertSurface(data, fmt, 0);
-	SDL_SetColorKey(tmp, SDL_TRUE, SDL_MapRGB(fmt, 255, 0, 255));
+	SDL_SetColorKey(tmp, SDL_TRUE, SDL_MapRGB(fmt, r, g, b));
 	SDL_Texture* texture;
 
 	if (keep_surface) {
 		texture = SDL_CreateTextureFromSurface(renderer, tmp);
 	} else {
-        texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, tmp->w, tmp->h);
+        texture = SDL_CreateTexture(renderer, format, SDL_TEXTUREACCESS_STREAMING, tmp->w, tmp->h);
         SDL_UpdateTexture(texture, NULL, tmp->pixels, tmp->pitch);
 		SDL_FreeSurface(tmp);
 	}

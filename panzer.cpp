@@ -241,7 +241,9 @@ void InitDDraw()
 	lpDDSMKeyboard = DDLoadTexture(renderer, MKeyboardbmp);
 
 	// hier die Credits
-	lpDDSCredits = DDLoadTexture(renderer, Creditsbmp);
+	lpDDSCredits.surface = SDL_LoadBMP("img/credits.bmp");
+	lpDDSCredits.texture = SDL_CreateTextureFromSurface(renderer, lpDDSCredits.surface);
+	// SDL_SetColorKey(lpDDSCredits.surface, SDL_TRUE, SDL_MapRGB(lpDDSCredits.surface->format, 255, 255, 255));
 
 	// hier das Titelbild
 	lpDDSTitel = DDLoadTexture(renderer, Titelbmp);
@@ -1420,77 +1422,77 @@ void InitStructs(short zustand)
 		CreditsListe[3].Zeit = 200;
 
 		CreditsListe[4].Bild = CRGRAFIK;
-		CreditsListe[4].Zeit = 300;
+		CreditsListe[4].Zeit = 400;
 		CreditsListe[4].Ueberschrift = true;
 
 		CreditsListe[5].Bild = CRDIRKPLATE;
-		CreditsListe[5].Zeit = 350;
+		CreditsListe[5].Zeit = 450;
 		CreditsListe[5].Ueberschrift = false;
 
 		CreditsListe[6].Bild = -3;
-		CreditsListe[6].Zeit = 360;
+		CreditsListe[6].Zeit = 460;
 
 		CreditsListe[7].Bild = -2;
-		CreditsListe[7].Zeit = 450;
+		CreditsListe[7].Zeit = 550;
 
 		CreditsListe[8].Bild = CRSOUND;
-		CreditsListe[8].Zeit = 550;
+		CreditsListe[8].Zeit = 650;
 		CreditsListe[8].Ueberschrift = true;
 
 		CreditsListe[9].Bild = CRDIRKPLATE;
-		CreditsListe[9].Zeit = 600;
+		CreditsListe[9].Zeit = 700;
 		CreditsListe[9].Ueberschrift = false;
 
 		CreditsListe[10].Bild = -3;
-		CreditsListe[10].Zeit = 610;
+		CreditsListe[10].Zeit = 710;
 
 		CreditsListe[11].Bild = -2;
-		CreditsListe[11].Zeit = 700;
+		CreditsListe[11].Zeit = 800;
 
 		CreditsListe[12].Bild = CRMUSIK;
-		CreditsListe[12].Zeit = 800;
+		CreditsListe[12].Zeit = 900;
 		CreditsListe[12].Ueberschrift = true;
 
 		CreditsListe[13].Bild = CRHEIKOPLATE;
-		CreditsListe[13].Zeit = 850;
+		CreditsListe[13].Zeit = 950;
 		CreditsListe[13].Ueberschrift = false;
 
 		CreditsListe[14].Bild = -3;
-		CreditsListe[14].Zeit = 860;
+		CreditsListe[14].Zeit = 1060;
 
 		CreditsListe[15].Bild = -2;
-		CreditsListe[15].Zeit = 950;
+		CreditsListe[15].Zeit = 1050;
 
 		CreditsListe[16].Bild = CRBETATESTER;
-		CreditsListe[16].Zeit = 1050;
+		CreditsListe[16].Zeit = 1150;
 		CreditsListe[16].Ueberschrift = true;
 
 		CreditsListe[17].Bild = CRMATTHIASBUCHETICS;
-		CreditsListe[17].Zeit = 1100;
+		CreditsListe[17].Zeit = 1200;
 		CreditsListe[17].Ueberschrift = false;
 
 		CreditsListe[18].Bild = -3;
-		CreditsListe[18].Zeit = 1110;
+		CreditsListe[18].Zeit = 1310;
 
 		CreditsListe[19].Bild = CRMARCEBERHARDT;
-		CreditsListe[19].Zeit = 1200;
+		CreditsListe[19].Zeit = 1400;
 		CreditsListe[19].Ueberschrift = false;
 
 		CreditsListe[20].Bild = -3;
-		CreditsListe[20].Zeit = 1210;
+		CreditsListe[20].Zeit = 1510;
 
 		CreditsListe[21].Bild = -2;
-		CreditsListe[21].Zeit = 1300;
+		CreditsListe[21].Zeit = 1600;
 
 		CreditsListe[22].Bild = CRDPSOFTWARE;
-		CreditsListe[22].Zeit = 1500;
+		CreditsListe[22].Zeit = 1700;
 		CreditsListe[22].Ueberschrift = false;
 
 		CreditsListe[23].Bild = -3;
-		CreditsListe[23].Zeit = 1600;
+		CreditsListe[23].Zeit = 1800;
 
 		CreditsListe[24].Bild = -2; // Am Schluss noch 50 Pause
-		CreditsListe[24].Zeit = 1650;
+		CreditsListe[24].Zeit = 1950;
 
 		Zeitgenau = SDL_GetTicks();
 
@@ -2288,6 +2290,43 @@ void PutPixel(short x, short y, DWORD color, LPDDSURFACEDESC2 *ddsdtmp)
 	if (color != 0)
 		color = (color << 8) | 0xFF;
 	pixels[y * pitch + x] = color;
+}
+
+DWORD GetPixel2(short x, short y, LPDDSURFACEDESC2 *ddsdtmp)
+{
+	if ((x >= MAXX) || (x < 0) || (y >= MAXY) || (y < 0))
+		return 0;
+
+	SDL_assert(ddsdtmp->surface != nullptr);
+
+	int bpp = ddsdtmp->surface->format->BytesPerPixel;
+	/* Here p is the address to the pixel we want to retrieve */
+	Uint8 *p = (Uint8 *)ddsdtmp->surface->pixels + y * ddsdtmp->surface->pitch + x * bpp;
+
+	switch (bpp) {
+		case 1:
+			return *p;
+		break;
+
+		case 2:
+			return *(Uint16 *)p;
+		break;
+
+		case 3:
+			if (SDL_BYTEORDER == SDL_BIG_ENDIAN)
+				return p[0] << 16 | p[1] << 8 | p[2];
+			else
+				return p[0] | p[1] << 8 | p[2] << 16;
+		break;
+
+		case 4:
+			return *(Uint32 *)p;
+		break;
+
+		default:
+			return 0; /* shouldn't happen, but avoids warnings */
+	}
+
 }
 
 DWORD GetPixel(short x, short y, LPDDSURFACEDESC2 *ddsdtmp)
@@ -3938,16 +3977,6 @@ void InitCredits()
 	Spielzustand = SZCREDITS;
 	CreditsZaehler = 0;
 
-	rcRectdes.left = 0;
-	rcRectdes.top = 0;
-	rcRectdes.right = MAXX;
-	rcRectdes.bottom = MAXY;
-	// Schriftsurface l�schen
-	// ddbltfx.dwFillColor = Tansparent;
-	// lpDDSSchrift->Blt(&rcRectdes, NULL,NULL,DDBLT_COLORFILL, &ddbltfx);
-	// Scapesurface l�schen
-	// lpDDSScape.Blt(&rcRectdes, NULL, NULL, DDBLT_COLORFILL, &ddbltfx);
-
 	// Boden einbauen
 	lpDDSScape.lock();
 	for (x = 0; x < MAXX; x++)
@@ -4012,22 +4041,22 @@ void CheckCredits()
 	Material = 1 + (rand() % 5);
 
 
-	Bmp[Bild].Surface.lock(); // Eigentlich hier ddsdsonstiges
 	lpDDSScape.lock();
-
-	for (Relx = 0; Relx < Bmp[Bild].Breite; Relx++)
-		for (Rely = 0; Rely < Bmp[Bild].Hoehe; Rely++)
+	for (Rely = 0; Rely < Bmp[Bild].Hoehe; Rely++) {
+		for (Relx = 0; Relx < Bmp[Bild].Breite; Relx++)
 		{
-			Farbe = GetPixel(Bmp[Bild].rcSrc.left + Relx, Bmp[Bild].rcSrc.top + Rely, &lpDDSBack);
-			if (Farbe == RGB2DWORD(255, 255, 255))
+			Farbe = GetPixel2(Bmp[Bild].rcSrc.left + Relx, Bmp[Bild].rcSrc.top + Rely, &Bmp[Bild].Surface);
+			if (Farbe == 0)
 				continue;
 			if (CreditsListe[i].Ueberschrift)
 				MakePixel(x + Relx, y + Rely, Material, 0, 0, false, -1);
 			else
 				MakePixel(x + Relx, y + Rely, Material, 0, 0, false, -1);
 		}
-	Bmp[Bild].Surface.unlock();
+	}
+	audio_manager->play(audio::CREDITS, audio::id::SFX, 100, false);
 	lpDDSScape.unlock();
+	SDL_UnlockTexture(Bmp[Bild].Surface.texture);
 }
 
 void Zeige(bool flippen)
@@ -5154,7 +5183,8 @@ int CheckMMenue()
 					Menue[AktMenue].putVersion(erg, 0);
 			}
 		}
-		Menue[AktMenue].zeige(); // Menue anzeigen
+		if (AktMenue >= 0)
+			Menue[AktMenue].zeige(); // Menue anzeigen
 	}
 	return 1;
 }
@@ -5347,7 +5377,10 @@ short Run()
 		{
 			if (CheckMMenue() == 0)
 				return 0;
+
 			SDL_RenderCopy(renderer, lpDDSBack.texture, NULL, NULL);
+
+			// SDL_RenderCopy(renderer, lpDDSCredits.texture, NULL, NULL);
 		}
 		else if (Spielzustand == SZSHOP)
 		{
@@ -5373,15 +5406,19 @@ short Run()
 		}
 		else if (Spielzustand == SZCREDITS)
 		{
-
-			CheckHimmelPixel(); // Nicht sichtbaren Bereich berechnen
-
 			lpDDSScape.lock();
+			if (Bild%(LastBild/30+1) == 0)
+			{
+				CheckCredits();
+			}
+
 			FindActivePixel();					 // Pixel berechnen
+			lpDDSScape.unlock();
 			if (Bild % (LastBild / 10 + 1) == 0) // unabh�nig von der Framerate
 				CheckFXPixel();					 // EffektPixel �berpr�fen
-			lpDDSScape.unlock();
-			Zeige(true); // Das Bild aufbauen
+
+			Zeige(false); // Das Bild aufbauen
+			SDL_RenderCopy(renderer, lpDDSBack.texture, NULL, NULL);
 		}
 		else if (Spielzustand == SZTITEL) {
 			MakeTitel();

@@ -221,16 +221,4 @@ void Menueseite::zeige()
 		}
 		t = t->next;
 	}
-
-	// Cursor
-	// TODO
-	// if (CursorTyp == CUKREUZ)
-	// 	ZeichneBmp(MousePosition.x, MousePosition.y,
-	// 			   CursorTyp, rcGesamt, 0, lpDDSBack.texture);
-	// else
-	// 	ZeichneBmp(MousePosition.x - Bmp[CursorTyp].Breite / 2,
-	// 			   MousePosition.y - Bmp[CursorTyp].Hoehe / 2,
-	// 			   CursorTyp, rcGesamt, 0, lpDDSBack.texture);
-	// Flippen
-	// lpDDSBack.Flip();
 }
