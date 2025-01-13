@@ -3970,6 +3970,14 @@ void InitCredits()
 	short x, y;
 
 	InitStructs(2); // Hier wird eventuell zu viel gemacht
+
+	lpDDSScape.clear();
+
+	lpDDSScape.lock();
+	for (int x = 0; x < MAXX; x++)
+        for (int y = 0; y < MAXY; y++)
+			lpDDSScape.lpSurface[y * (lpDDSScape.lPitch/4) + x] = 0;
+	lpDDSScape.unlock();
 	AktMenue = -1;
 	Wind.x = 0;
 	Wind.y = 0;
@@ -4002,9 +4010,9 @@ void CheckCredits()
 			CreditsZaehler = 0;
 			return;
 		}
-		if (CreditsListe[i].Zeit == CreditsZaehler)
+		if (CreditsListe[i].Zeit * 2 == CreditsZaehler)
 			break;
-		if (CreditsListe[i].Zeit > CreditsZaehler)
+		if (CreditsListe[i].Zeit * 2> CreditsZaehler)
 			return;
 	}
 
@@ -5435,9 +5443,10 @@ short Run()
 
 		auto diff_ms = std::chrono::duration<double, std::milli>(end - start).count();
 
-		if (diff_ms < 33) {
+		const auto frame_time = 1000.0 / 60.0;
+		if (diff_ms < frame_time) {
 			// Sleep(33 - diff_ms);
-			SDL_Delay(33 - diff_ms);
+			SDL_Delay(SDL_min(frame_time - diff_ms, frame_time));
 		}
 		if (Bild % 30 == 0)
 		{
