@@ -3988,9 +3988,7 @@ void InitCredits()
 		for (y = MAXY - 2; y < MAXY; y++)
 			MakePixel(x, y, ARTSTEIN, 0, 0, false, -1);
 	lpDDSScape.unlock();
-
-	// Sound abspielen
-	audio_manager->play(audio::CREDITS_MUSIC, audio::id::MUSIC, 100, true);
+	audio_manager->play(audio::CREDITS_MUSIC, audio::id::MUSIC, 255, true, false);
 }
 
 void CheckCredits()
