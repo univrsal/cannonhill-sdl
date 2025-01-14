@@ -1461,7 +1461,7 @@ void InitStructs(short zustand)
 		CreditsListe[14].Zeit = 1060;
 
 		CreditsListe[15].Bild = -2;
-		CreditsListe[15].Zeit = 1050;
+		CreditsListe[15].Zeit = 1080;
 
 		CreditsListe[16].Bild = CRBETATESTER;
 		CreditsListe[16].Zeit = 1150;
@@ -2294,9 +2294,6 @@ void PutPixel(short x, short y, DWORD color, LPDDSURFACEDESC2 *ddsdtmp)
 
 DWORD GetPixel2(short x, short y, LPDDSURFACEDESC2 *ddsdtmp)
 {
-	if ((x >= MAXX) || (x < 0) || (y >= MAXY) || (y < 0))
-		return 0;
-
 	SDL_assert(ddsdtmp->surface != nullptr);
 
 	int bpp = ddsdtmp->surface->format->BytesPerPixel;
@@ -4012,7 +4009,7 @@ void CheckCredits()
 		}
 		if (CreditsListe[i].Zeit * 2 == CreditsZaehler)
 			break;
-		if (CreditsListe[i].Zeit * 2> CreditsZaehler)
+		if (CreditsListe[i].Zeit * 2 > CreditsZaehler)
 			return;
 	}
 
