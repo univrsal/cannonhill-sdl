@@ -93,23 +93,24 @@ CREDITSLISTE CreditsListe[MAXCREDITS];
 
 // Bilder
 
-static char Cursorbmp[] = "img/Cursor.BMP";
-static char Schrift2[] = "img/schrift2.bmp";
-static char Schrift1[] = "img/schrift1.bmp";
-static char Schrift3[] = "img/schrift3.bmp";
-static char Panzerbmp[] = "img/Panzer.bmp";
-static char Munitionbmp[] = "img/Munition.bmp";
-static char Himmelbmp[] = "img/himmel.bmp";
-static char Himmel2bmp[] = "img/himmel2.bmp";
-static char Himmel3bmp[] = "img/himmel3.bmp";
-static char Sonstigesbmp[] = "img/sonstiges.bmp";
-static char MBackbmp[] = "img/mback.bmp";
-static char MSBackbmp[] = "img/msback.bmp";
-static char MPunktbmp[] = "img/mpunkt.bmp";
-static char MGBackbmp[] = "img/mgback.bmp";
-static char MKeyboardbmp[] = "img/Keyboard.bmp";
-static char Creditsbmp[] = "img/credits.bmp";
-static char Titelbmp[] = "img/titel.bmp";
+
+static char Cursorbmp[] = PATH_PREFIX "img/Cursor.BMP";
+static char Schrift2[] = PATH_PREFIX "img/schrift2.bmp";
+static char Schrift1[] = PATH_PREFIX "img/schrift1.bmp";
+static char Schrift3[] = PATH_PREFIX "img/schrift3.bmp";
+static char Panzerbmp[] = PATH_PREFIX "img/Panzer.bmp";
+static char Munitionbmp[] = PATH_PREFIX "img/Munition.bmp";
+static char Himmelbmp[] = PATH_PREFIX "img/himmel.bmp";
+static char Himmel2bmp[] = PATH_PREFIX "img/himmel2.bmp";
+static char Himmel3bmp[] = PATH_PREFIX "img/himmel3.bmp";
+static char Sonstigesbmp[] = PATH_PREFIX "img/sonstiges.bmp";
+static char MBackbmp[] = PATH_PREFIX "img/mback.bmp";
+static char MSBackbmp[] = PATH_PREFIX "img/msback.bmp";
+static char MPunktbmp[] = PATH_PREFIX "img/mpunkt.bmp";
+static char MGBackbmp[] = PATH_PREFIX "img/mgback.bmp";
+static char MKeyboardbmp[] = PATH_PREFIX "img/Keyboard.bmp";
+static char Creditsbmp[] = PATH_PREFIX "img/credits.bmp";
+static char Titelbmp[] = PATH_PREFIX "img/titel.bmp";
 
 float ScaleFactor = 2.0f;
 
@@ -154,6 +155,7 @@ void InitDDraw()
 
 	if (!renderer)
 	{
+		printf("Failed to create renderer: %s\n", SDL_GetError());
 		return;
 	}
 
@@ -5211,245 +5213,248 @@ void ComputerShop(short i)
 	}
 }
 
-short Run()
+void pre_run()
 {
-	int Zeitdiv;
-	int erg;
-	int i, j;
-	double delta = 0;
-	short shopindex = 0;
+
+	printf("Pre run init");
 
 	if (Spielzustand == SZNICHTS)
 	{
 		Spielzustand = SZTITEL;
 	}
 
-	SDL_Event event{};
-
 	audio_manager->play(audio::TITLE_MUSIC, audio::id::MUSIC, 255, true, false);
-	while (1)
-	{
-		auto Button0downbefore = Button0down;
-		auto Button1downbefore = Button1down;
+}
+bool bQuit = false;
 
-		while (SDL_PollEvent(&event))
-		{
-			switch (event.type)
-			{
-			case SDL_QUIT:
-				return 0;
-			}
+void Run()
+{
+	SDL_Event event{};
+	int Zeitdiv;
+	int erg;
+	int i, j;
+	double delta = 0;
+	short shopindex = 0;
+	auto Button0downbefore = Button0down;
+	auto Button1downbefore = Button1down;
 
-			if (event.type == SDL_KEYDOWN)
-			{
-				if (event.key.keysym.sym == SDLK_l)
-				{
-					Panzer[1].LebensEnergie = -1;
-				}
-			}
-			if (CheckKey(&event) == 0)
-				return 0; // Das Keyboard abfragen
-			CheckMouse(&event);						// Den MouseZustand abchecken
+    while (SDL_PollEvent(&event))
+    {
+        switch (event.type)
+        {
+        case SDL_QUIT:
+        	bQuit = true;
+            return ;
+        }
 
-		}
+        if (event.type == SDL_KEYDOWN)
+        {
+            if (event.key.keysym.sym == SDLK_l)
+            {
+                Panzer[1].LebensEnergie = -1;
+            }
+        }
+        if (CheckKey(&event) == 0)
+            return; // Das Keyboard abfragen
+        CheckMouse(&event);						// Den MouseZustand abchecken
 
-        if (Button0downbefore && Button0down)
-            ButtonPush = 0;
-        if (Button1downbefore && Button1down)
-            ButtonPush = 0;
+    }
 
-		// Zeit abfragen
-		auto start = std::chrono::high_resolution_clock::now();
-		SDL_RenderClear(renderer);
+    if (Button0downbefore && Button0down)
+        ButtonPush = 0;
+    if (Button1downbefore && Button1down)
+        ButtonPush = 0;
 
-		// fps rausfinden
-		Bild++;
+    // Zeit abfragen
+    auto start = std::chrono::high_resolution_clock::now();
+    SDL_RenderClear(renderer);
 
-		if (Spielzustand == SZSPIEL)
-		{
-			if (AktMenue == -1) // Kein Men� eingeblendet (normal)
-			{
-				// Wieviele Spieler leben noch
-				erg = 0;
-				for (i = 0; i < MAXSPIELER; i++)
-				{
-					if (Panzer[i].Aktiv)
-					{
-						erg++;
-						j = i;
-					}
-				}
-				if (erg <= 1)
-				{
-					AktMenue = MENRGEWONNEN;
-					Menue[AktMenue].putBild(1, MROTER + j);
-					Panzer[j].RGewonnen++;
-					StopAllSound();
-					PlaySound(WAVYIPPEE, 100, Panzer[j].p.Pos.x, -1, false, -1);
-					audio_manager->play(audio::YIPPIEE, audio::id::SFX, 100, false);
-				}
+    // fps rausfinden
+    Bild++;
 
-				if (Bild % (LastBild / 30 + 1) == 0) // unabh�nig von der Framerate
-				{
-					Computer();		// Die Computerspieler
-				}
+    if (Spielzustand == SZSPIEL)
+    {
+        if (AktMenue == -1) // Kein Men� eingeblendet (normal)
+        {
+            // Wieviele Spieler leben noch
+            erg = 0;
+            for (i = 0; i < MAXSPIELER; i++)
+            {
+                if (Panzer[i].Aktiv)
+                {
+                    erg++;
+                    j = i;
+                }
+            }
+            if (erg <= 1)
+            {
+                AktMenue = MENRGEWONNEN;
+                Menue[AktMenue].putBild(1, MROTER + j);
+                Panzer[j].RGewonnen++;
+                StopAllSound();
+                PlaySound(WAVYIPPEE, 100, Panzer[j].p.Pos.x, -1, false, -1);
+                audio_manager->play(audio::YIPPIEE, audio::id::SFX, 100, false);
+            }
 
-				if (Testmodus) // Beim Testmodus immer den gesamten Bildschirm l�schen
-				{
-					rcRectdes.left = 0;
-					rcRectdes.top = 0;
-					rcRectdes.right = MAXX;
-					rcRectdes.bottom = MAXY;
-					// ddbltfx.dwFillColor = Tansparent;
-					lpDDSScape.Blt(&rcRectdes, NULL, NULL);
-				}
-			}
+            if (Bild % (LastBild / 30 + 1) == 0) // unabh�nig von der Framerate
+            {
+                Computer();		// Die Computerspieler
+            }
 
-			if (Bild % (LastBild / 20 + 1) == 0) // unabh�nig von der Framerate
-				CheckBallon();					 // Ballon erzeugen und bewegen
-			CheckPanzer();						 // Panzer berechnen
-			CheckHimmelPixel();					 // Nicht sichtbaren Bereich berechnen
-			//
-			lpDDSScape.lock();
-			CheckMunListe();					 // Geschosse berechnen
-			MakeWetter();						 // Wetter erzeugen
-			FindActivePixel();					 // Pixel berechnen
-			lpDDSScape.unlock();
-			if (Bild % (LastBild / 10 + 1) == 0) // unabh�nig von der Framerate
-				CheckFXPixel();					 // EffektPixel �berpr�fen
+            if (Testmodus) // Beim Testmodus immer den gesamten Bildschirm l�schen
+            {
+                rcRectdes.left = 0;
+                rcRectdes.top = 0;
+                rcRectdes.right = MAXX;
+                rcRectdes.bottom = MAXY;
+                // ddbltfx.dwFillColor = Tansparent;
+                lpDDSScape.Blt(&rcRectdes, NULL, NULL);
+            }
+        }
 
-			if (AktMenue != -1) // ein Overlaymen� vorhanden
-			{
-				Zeige(false);						// Betrug (bild wird nicht angezeigt, sondern nur aufgebaut)
-				erg = Menue[AktMenue].inputMouse(); // Mausaktionen abfragen
-				if (erg != -1)
-				{
-					if ((AktMenue == MENRGEWONNEN) && (erg == 5))
-					{
-						if (AktRunde == MaxRunde)
-						{
-							Spielzustand = SZMENUE;
-							AktMenue = MENGGEWONNEN;
-							PutGMenue();
-							StopAllSound();
-							audio_manager->play(audio::APPLAUSE, audio::id::SFX, 255, false);
-							continue;
-						}
-						GetMenue();
-						Spielzustand = SZSHOP;
-						shopindex = 0;
-						AktMenue = MENSHOP;
-						StopAllSound();
-						continue;
-					}
-					else if (AktMenue == MENBEENDEN)
-					{
-						if (erg == 1)
-						{
-							AktMenue = -1;
-							continue;
-						}
-						if (erg == 2)
-						{
-							AktMenue = MENTASTENO;
-							continue;
-						}
-						if (erg == 3)
-						{
-							Spielzustand = SZMENUE;
-							AktMenue = MENMAIN;
-							StopAllSound();
-							continue;
-						}
-					}
-					else if (((AktMenue == MENSTART) && (erg == 3)) ||
-							 (AktMenue == MENTASTENO))
-					{
-						AktMenue = -1;
-						continue;
-					}
-				}
-				Menue[AktMenue].zeige(); // Men� anzeigen
+        if (Bild % (LastBild / 20 + 1) == 0) // unabh�nig von der Framerate
+            CheckBallon();					 // Ballon erzeugen und bewegen
+        CheckPanzer();						 // Panzer berechnen
+        CheckHimmelPixel();					 // Nicht sichtbaren Bereich berechnen
+        //
+        lpDDSScape.lock();
+        CheckMunListe();					 // Geschosse berechnen
+        MakeWetter();						 // Wetter erzeugen
+        FindActivePixel();					 // Pixel berechnen
+        lpDDSScape.unlock();
+        if (Bild % (LastBild / 10 + 1) == 0) // unabh�nig von der Framerate
+            CheckFXPixel();					 // EffektPixel �berpr�fen
 
-			}
-			else
-				Zeige(false); // Das Bild aufbauen
-			SDL_RenderCopy(renderer, lpDDSBack.texture, NULL, NULL);
-		}
-		else if (Spielzustand == SZMENUE)
-		{
-			if (CheckMMenue() == 0)
-				return 0;
+        if (AktMenue != -1) // ein Overlaymen� vorhanden
+        {
+            Zeige(false);						// Betrug (bild wird nicht angezeigt, sondern nur aufgebaut)
+            erg = Menue[AktMenue].inputMouse(); // Mausaktionen abfragen
+            if (erg != -1)
+            {
+                if ((AktMenue == MENRGEWONNEN) && (erg == 5))
+                {
+                    if (AktRunde == MaxRunde)
+                    {
+                        Spielzustand = SZMENUE;
+                        AktMenue = MENGGEWONNEN;
+                        PutGMenue();
+                        StopAllSound();
+                        audio_manager->play(audio::APPLAUSE, audio::id::SFX, 255, false);
+                        return;
+                    }
+                    GetMenue();
+                    Spielzustand = SZSHOP;
+                    shopindex = 0;
+                    AktMenue = MENSHOP;
+                    StopAllSound();
+                    return;
+                }
+                else if (AktMenue == MENBEENDEN)
+                {
+                    if (erg == 1)
+                    {
+                        AktMenue = -1;
+                        return;
+                    }
+                    if (erg == 2)
+                    {
+                        AktMenue = MENTASTENO;
+                        return;
+                    }
+                    if (erg == 3)
+                    {
+                        Spielzustand = SZMENUE;
+                        AktMenue = MENMAIN;
+                        StopAllSound();
+                        return;
+                    }
+                }
+                else if (((AktMenue == MENSTART) && (erg == 3)) ||
+                         (AktMenue == MENTASTENO))
+                {
+                    AktMenue = -1;
+                    return;
+                }
+            }
+            Menue[AktMenue].zeige(); // Men� anzeigen
 
-			SDL_RenderCopy(renderer, lpDDSBack.texture, NULL, NULL);
+        }
+        else
+            Zeige(false); // Das Bild aufbauen
+        SDL_RenderCopy(renderer, lpDDSBack.texture, NULL, NULL);
+    }
+    else if (Spielzustand == SZMENUE)
+    {
+        if (CheckMMenue() == 0)
+            return;
 
-			// SDL_RenderCopy(renderer, lpDDSCredits.texture, NULL, NULL);
-		}
-		else if (Spielzustand == SZSHOP)
-		{
-			if (!Panzer[shopindex].Aktiv)
-			{
-				shopindex++;
-			}
-			else if (Panzer[shopindex].Computer)
-			{
-				ComputerShop(shopindex++);
-			}
-			else
-			{
-				if (CheckShop(shopindex))
-					shopindex++;
-			}
-				
-			if (shopindex >= MAXSPIELER)
-			{
-				NeuesSpiel();
-			}
-			SDL_RenderCopy(renderer, lpDDSBack.texture, NULL, NULL);
-		}
-		else if (Spielzustand == SZCREDITS)
-		{
-			lpDDSScape.lock();
-			if (Bild%(LastBild/30+1) == 0)
-			{
-				CheckCredits();
-			}
+        SDL_RenderCopy(renderer, lpDDSBack.texture, NULL, NULL);
 
-			FindActivePixel();					 // Pixel berechnen
-			lpDDSScape.unlock();
-			if (Bild % (LastBild / 10 + 1) == 0) // unabh�nig von der Framerate
-				CheckFXPixel();					 // EffektPixel �berpr�fen
+        // SDL_RenderCopy(renderer, lpDDSCredits.texture, NULL, NULL);
+    }
+    else if (Spielzustand == SZSHOP)
+    {
+        if (!Panzer[shopindex].Aktiv)
+        {
+            shopindex++;
+        }
+        else if (Panzer[shopindex].Computer)
+        {
+            ComputerShop(shopindex++);
+        }
+        else
+        {
+            if (CheckShop(shopindex))
+                shopindex++;
+        }
 
-			Zeige(false); // Das Bild aufbauen
-			SDL_RenderCopy(renderer, lpDDSBack.texture, NULL, NULL);
-		}
-		else if (Spielzustand == SZTITEL) {
-			MakeTitel();
-		}
+        if (shopindex >= MAXSPIELER)
+        {
+            NeuesSpiel();
+        }
+        SDL_RenderCopy(renderer, lpDDSBack.texture, NULL, NULL);
+    }
+    else if (Spielzustand == SZCREDITS)
+    {
+        lpDDSScape.lock();
+        if (Bild%(LastBild/30+1) == 0)
+        {
+            CheckCredits();
+        }
 
-		SDL_Rect dest {
-			0, 0, 40, 40
-		};
-		// SDL_RenderCopy(renderer, lpDDSPanzSave.texture, NULL, &dest);
+        FindActivePixel();					 // Pixel berechnen
+        lpDDSScape.unlock();
+        if (Bild % (LastBild / 10 + 1) == 0) // unabh�nig von der Framerate
+            CheckFXPixel();					 // EffektPixel �berpr�fen
 
-		SDL_RenderPresent(renderer);
+        Zeige(false); // Das Bild aufbauen
+        SDL_RenderCopy(renderer, lpDDSBack.texture, NULL, NULL);
+    }
+    else if (Spielzustand == SZTITEL) {
+        MakeTitel();
+    }
 
-		auto end = std::chrono::high_resolution_clock::now();
+    SDL_Rect dest {
+        0, 0, 40, 40
+    };
+    // SDL_RenderCopy(renderer, lpDDSPanzSave.texture, NULL, &dest);
 
-		auto diff_ms = std::chrono::duration<double, std::milli>(end - start).count();
+    SDL_RenderPresent(renderer);
 
-		const auto frame_time = 1000.0 / 60.0;
-		if (diff_ms < frame_time) {
-			// Sleep(33 - diff_ms);
-			SDL_Delay(SDL_min(frame_time - diff_ms, frame_time));
-		}
-		if (Bild % 30 == 0)
-		{
-			// fps rausfinden
-			// printf("fps: %f\n", 1.0 / diff_ms);
-		}
-	}
-	return (1);
+    auto end = std::chrono::high_resolution_clock::now();
+
+    auto diff_ms = std::chrono::duration<double, std::milli>(end - start).count();
+
+    const auto frame_time = 1000.0 / 60.0;
+    if (diff_ms < frame_time) {
+        // Sleep(33 - diff_ms);
+        SDL_Delay(SDL_min(frame_time - diff_ms, frame_time));
+    }
+    if (Bild % 30 == 0)
+    {
+        // fps rausfinden
+        // printf("fps: %f\n", 1.0 / diff_ms);
+    }
 }
 
 /*
@@ -5458,15 +5463,18 @@ short Run()
  */
 static BOOL doInit()
 {
+	printf("Initializing...\n");
 	// init SDL
-	if (SDL_Init(SDL_INIT_EVERYTHING) < 0)
+	if (SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO | SDL_INIT_EVENTS) < 0)
 	{
+		printf("Failed to init SDL: %s\n", SDL_GetError());
 		return false;
 	}
 
 	/*
 	 * create a window
 	 */
+	printf("Creating window...\n");
 	window = SDL_CreateWindow(
 		TITLE,
 		SDL_WINDOWPOS_CENTERED,
@@ -5477,13 +5485,17 @@ static BOOL doInit()
 
 	if (!window)
 	{
+		printf("Failed to create window: %s\n", SDL_GetError());
 		return false;
 	}
 
+	printf("Loading textures...\n");
 	InitDDraw();
+	printf("Loading sounds...\n");
 	InitDSound();
 	srand((unsigned)time(NULL));   // Random initialisieren
 	// Structs initialisieren
+	printf("Initializing data...\n");
 	InitStructs(0);
 	LoadGame();
 	return true;
@@ -5494,13 +5506,34 @@ static BOOL doInit()
 /*
  * Main - initialization, message loop
  */
+#include <iostream>
+void main_loop() {
+	Run();
+}
+
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
+
+#ifdef __EMSCRIPTEN__
+int main()
+#else
 int main(int argc, char* argv[])
+#endif
 {
+
 	if (!doInit())
 	{
 		return 1;
 	}
-	int result = Run();
+	pre_run();
+#ifdef __EMSCRIPTEN__
+	printf("Setting main loop\n");
+	emscripten_set_main_loop(main_loop, 0, 1);
+#else
+	while (!bQuit)
+	Run();
+#endif
 	finiObjects();
-	return result;
+	return 0;
 }

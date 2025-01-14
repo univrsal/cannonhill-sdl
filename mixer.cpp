@@ -6,7 +6,7 @@ namespace audio {
 wav_file::wav_file(const string &path)
 {
     if (SDL_LoadWAV(path.c_str(), &m_spec, &m_buf, &m_len) == nullptr)
-        SDL_Log("Couldn't load '%s': '%s'", path.c_str(), SDL_GetError());
+        printf("Couldn't load '%s': '%s'\n", path.c_str(), SDL_GetError());
     m_duration = (double)m_len / (m_spec.freq * m_spec.channels * (SDL_AUDIO_BITSIZE(m_spec.format) / 8));
 }
 
@@ -34,6 +34,9 @@ clip::~clip()
 
 void channel::add_clip(const clip &c)
 {
+#ifdef __EMSCRIPTEN__
+   // return; // audio is broken on emscripten
+#endif
     m_clips.emplace_back(c);
 }
 
@@ -63,7 +66,6 @@ void channel::audio_tick(uint8_t *stream, int len)
                 tmplen = 0;
             else
                 tmplen = SDL_min((uint32_t)len, clip.len());
-
             SDL_MixAudioFormat(stream, clip.buf(), clip.wav()->spec().format, tmplen, clip.vol() * m_volume);
             clip.buf() += tmplen;
             clip.set_len(clip.len() - SDL_min(tmplen, clip.len()));
@@ -118,11 +120,12 @@ bool device::open(const SDL_AudioSpec &s)
     SDL_AudioSpec obt{};
     auto id = SDL_OpenAudioDevice(m_name.c_str(), m_type == CAPTURE, &s, &obt, SDL_AUDIO_ALLOW_CHANGES);
     if (id <= 0) {
-        SDL_Log("Failed to open audio device '%s': '%s'", m_name.c_str(), SDL_GetError());
+        printf("Failed to open audio device '%s': '%s'\n", m_name.c_str(), SDL_GetError());
         m_audio_enabled = false;
         return false;
     }
     m_spec = obt;
+    printf("Obtained audio device '%s' with %d channels, %d Hz, %d samples\n", m_name.c_str(), m_spec.channels, m_spec.freq, m_spec.samples);
     m_id = id;
     m_audio_enabled = true;
     unpause();
@@ -167,7 +170,6 @@ string active_driver = "";
 
 void audio_callback(void *, uint8_t *stream, int len)
 {
-
     SDL_memset(stream, 0, len);
     if (active_playback_device)
         active_playback_device->play_audio(stream, len);
@@ -188,7 +190,7 @@ bool init()
         if (driver.empty())
             driver = SDL_GetAudioDriver(i);
         drivers.emplace_back(SDL_GetAudioDriver(i));
-        SDL_Log("Available audio driver: %s", SDL_GetAudioDriver(i));
+        printf("Available audio driver: %s\n", SDL_GetAudioDriver(i));
     }
 
 #if _WIN32
@@ -199,13 +201,13 @@ bool init()
 #endif
 
     if (driver.empty()) {
-        SDL_Log("No available audio driver found");
+        printf("No available audio driver found\n");
         return false;
     }
 
     /* Initialize Driver */
     if (SDL_AudioInit(driver.c_str()) < 0) {
-        SDL_Log("Audio driver initialization failed: '%s'", SDL_GetError());
+        printf("Audio driver initialization failed: '%s'\n", SDL_GetError());
         return false;
     }
 
@@ -213,12 +215,12 @@ bool init()
 
     for (int i = 0; i < SDL_GetNumAudioDevices(0); i++) {
         auto *name = SDL_GetAudioDeviceName(i, 0);
-        SDL_Log("Available playback device: %s", name);
+        printf("Available playback device: %s\n", name);
         auto dev = make_shared<speaker>(name);
         devices.emplace_back(dev);
     }
     if (devices.empty()) {
-        SDL_Log("No Playback devices");
+        printf("No Playback devices\n");
         return false;
     }
 
@@ -235,21 +237,21 @@ bool init()
 
         if (active_playback_device->open(want)) {
             success = true;
-            SDL_Log("Initialized '%s' as playback device", active_playback_device->name().c_str());
+            printf("Initialized '%s' as playback device\n", active_playback_device->name().c_str());
             break;
         } else {
-            SDL_Log("Couldn't initialize '%s': '%s'", active_playback_device->name().c_str(), SDL_GetError());
+            printf("Couldn't initialize '%s': '%s'\n", active_playback_device->name().c_str(), SDL_GetError());
         }
     }
 
     if (!success) {
-        SDL_Log("No valid playback device was found");
+        printf("No valid playback device was found\n");
         return false;
     }
 
     for (int i = 0; i < SDL_GetNumAudioDevices(1); i++) {
         auto *name = SDL_GetAudioDeviceName(i, 1);
-        SDL_Log("Available capture device: %s", name);
+        printf("Available capture device: %s\n", name);
         auto dev = make_shared<microphone>(name);
         devices.emplace_back(dev);
         if (!active_capture_device)

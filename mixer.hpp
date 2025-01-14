@@ -5,12 +5,13 @@
 #include <map>
 #include <string>
 
-#define AUDIO_FORMAT AUDIO_S16LSB
+#define AUDIO_FORMAT AUDIO_S16SYS
+
 #define AUDIO_FREQUENCY 48000
+#define AUDIO_SAMPLES 8192
 #define AUDIO_CHANNELS 1
-#define AUDIO_SAMPLES 4096
 #define AUDIO_MAX_SOUNDS 25
-#define SDL_AUDIO_ALLOW_CHANGES SDL_AUDIO_ALLOW_ANY_CHANGE
+ #define SDL_AUDIO_ALLOW_CHANGES 0 //SDL_AUDIO_ALLOW_ANY_CHANGE
 
 using namespace std;
 namespace audio {
@@ -55,7 +56,7 @@ public:
     uint32_t const &len() const { return m_len; }
     uint8_t * const&buf() const { return m_buf; }
     uint8_t * &buf()  { return m_buf; }
-    shared_ptr<wav_file> wav() { return m_wav; }
+    shared_ptr<wav_file> wav() const { return m_wav; }
 
     void set_fade(bool f = true) { m_fade = f; }
     void set_done(bool d = true) { m_done = d; }

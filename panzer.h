@@ -15,6 +15,12 @@
 
 #include "audio.hpp"
 
+#ifdef __EMSCRIPTEN__
+#define PATH_PREFIX "res/"
+#else
+#define PATH_PREFIX ""
+#endif
+
 #define NAME "Panzer"
 #define TITLE "Panzer"
 #define INITGUID
@@ -280,7 +286,7 @@ struct LPDDSURFACEDESC2
 		}
 		else
 		{
-			SDL_Log("Failed to lock texture: %s", SDL_GetError());
+			printf("Failed to lock texture: %s\n", SDL_GetError());
 			// SDL_assert(false);
 		}
 	}

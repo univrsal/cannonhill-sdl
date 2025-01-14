@@ -1,4 +1,5 @@
 #include "audio.hpp"
+#include "panzer.h"
 #include <SDL.h>
 
 namespace audio {
@@ -9,32 +10,32 @@ struct audio_file {
 };
 
 static audio_file files[] = {
-    {APPLAUSE, "./sounds/applaus.wav"},
-    {CREDITS, "./sounds/credits.wav"},
-    {CREDITS_MUSIC, "./sounds/creditsmusik.wav"},
-    {EXPLOSION, "./sounds/explosiong.wav"},
-    {PARACHUTE, "./sounds/fallschirm.wav"},
-    {PARACHUTE2, "./sounds/fallschirm2.wav"},
-    {RIFLE, "./sounds/gewehr.wav"},
-    {GRENADE, "./sounds/granate.wav"},
-    {REGISTER, "./sounds/kasse.wav"},
-    {CLICK, "./sounds/klick.wav"},
-    {CRACKLING, "./sounds/knistern.wav"},
-    {LASER, "./sounds/laser.wav"},
-    {MAGNET_SHIELD, "./sounds/magnetschild.wav"},
-    {MOUSE1, "./sounds/mouse1.wav"},
-    {MOUSE2, "./sounds/mouse1.wav"},
-    {MOUSE3, "./sounds/mouse1.wav"},
-    {MOUSE4, "./sounds/mouse1.wav"},
-    {TANK, "./sounds/panzer.wav"},
-    {RICOCHET, "./sounds/querschuss.wav"},
-    {ROCKET, "./sounds/rakete.wav"},
-    {ACID, "./sounds/saeure.wav"},
-    {SHIELD, "./sounds/schild.wav"},
-    {SPLINTER, "./sounds/splitter.wav"},
-    {STONE, "./sounds/stein.wav"},
-    {TITLE_MUSIC, "./sounds/titelmusik.wav"},
-    {YIPPIEE, "./sounds/yippee.wav"},
+    {APPLAUSE, PATH_PREFIX "./sounds/applaus.wav"},
+    {CREDITS, PATH_PREFIX "./sounds/credits.wav"},
+    {CREDITS_MUSIC, PATH_PREFIX "./sounds/creditsmusik.wav"},
+    {EXPLOSION, PATH_PREFIX "./sounds/explosiong.wav"},
+    {PARACHUTE, PATH_PREFIX "./sounds/fallschirm.wav"},
+    {PARACHUTE2, PATH_PREFIX "./sounds/fallschirm2.wav"},
+    {RIFLE, PATH_PREFIX "./sounds/gewehr.wav"},
+    {GRENADE, PATH_PREFIX "./sounds/granate.wav"},
+    {REGISTER, PATH_PREFIX "./sounds/kasse.wav"},
+    {CLICK, PATH_PREFIX "./sounds/klick.wav"},
+    {CRACKLING, PATH_PREFIX "./sounds/knistern.wav"},
+    {LASER, PATH_PREFIX "./sounds/laser.wav"},
+    {MAGNET_SHIELD, PATH_PREFIX "./sounds/magnetschild.wav"},
+    {MOUSE1, PATH_PREFIX "./sounds/mouse1.wav"},
+    {MOUSE2, PATH_PREFIX "./sounds/mouse1.wav"},
+    {MOUSE3, PATH_PREFIX "./sounds/mouse1.wav"},
+    {MOUSE4, PATH_PREFIX "./sounds/mouse1.wav"},
+    {TANK, PATH_PREFIX "./sounds/panzer.wav"},
+    {RICOCHET, PATH_PREFIX "./sounds/querschuss.wav"},
+    {ROCKET, PATH_PREFIX "./sounds/rakete.wav"},
+    {ACID, PATH_PREFIX "./sounds/saeure.wav"},
+    {SHIELD, PATH_PREFIX "./sounds/schild.wav"},
+    {SPLINTER, PATH_PREFIX "./sounds/splitter.wav"},
+    {STONE, PATH_PREFIX "./sounds/stein.wav"},
+    {TITLE_MUSIC, PATH_PREFIX "./sounds/titelmusik.wav"},
+    {YIPPIEE, PATH_PREFIX "./sounds/yippee.wav"},
 };
 
 manager::manager()
