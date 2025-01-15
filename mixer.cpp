@@ -34,9 +34,6 @@ clip::~clip()
 
 void channel::add_clip(const clip &c)
 {
-#ifdef __EMSCRIPTEN__
-   // return; // audio is broken on emscripten
-#endif
     m_clips.emplace_back(c);
 }
 
@@ -62,13 +59,30 @@ void channel::audio_tick(uint8_t *stream, int len)
                     clip.set_len(0);
             }
 
-            if (music && clip.loop() && clip.fade() == 0)
-                tmplen = 0;
-            else
-                tmplen = SDL_min((uint32_t)len, clip.len());
-            SDL_MixAudioFormat(stream, clip.buf(), clip.wav()->spec().format, tmplen, clip.vol() * m_volume);
-            clip.buf() += tmplen;
-            clip.set_len(clip.len() - SDL_min(tmplen, clip.len()));
+            if (len > clip.len()) {
+                SDL_MixAudioFormat(stream, clip.buf(), clip.wav()->spec().format, clip.len(), clip.vol() * m_volume);
+                if (clip.loop()) {
+                    // mix in the rest of the clip
+                    auto left = len - clip.len();
+                    clip.buf() = clip.wav()->buf();
+                    SDL_MixAudioFormat(stream, clip.buf(), clip.wav()->spec().format, left, clip.vol() * m_volume);
+                    clip.set_len(clip.wav()->len() - left);
+                } else {
+                    clip.set_done();
+                    clip.set_len(0);
+                }
+            } else {
+                SDL_MixAudioFormat(stream, clip.buf(), clip.wav()->spec().format, len, clip.vol() * m_volume);
+                clip.buf() += len;
+                clip.set_len(clip.len() -len);
+            }
+            // if (music && clip.loop()) {
+            //     tmplen = 0;
+            // } else {
+            //     tmplen = SDL_min((uint32_t)len, clip.len());
+            // }
+            // SDL_MixAudioFormat(stream, clip.buf(), clip.wav()->spec().format, tmplen, clip.vol() * m_volume);
+
         } else if (clip.loop() && clip.fade()) {
             clip.buf() = clip.wav()->buf();
             clip.set_len(clip.wav()->len());
