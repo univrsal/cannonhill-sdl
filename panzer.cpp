@@ -1300,7 +1300,9 @@ void InitStructs(short zustand)
 		Menue[MENMAIN].setzeMenuepunkt(80, 170, MOPTION, true, MENOPTION, 0, -1, -1);
 		Menue[MENMAIN].setzeMenuepunkt(80, 220, MSPIELER, true, MENSPIELER, 0, -1, -1);
 		Menue[MENMAIN].setzeMenuepunkt(80, 270, MCREDITS, true, -4, 0, -1, -1);
+#ifndef __EMSCRIPTEN__ // Emscripten does not support exiting the game
 		Menue[MENMAIN].setzeMenuepunkt(80, 350, MBEENDEN, true, -2, 0, -1, -1);
+#endif
 		Menue[MENMAIN].setzeMenuepunkt(350, 250, MBBUNKER, false, -1, 0, -1, -1);
 
 		Menue[MENOPTION].setzeBackground(MBACK);
@@ -5388,8 +5390,10 @@ void Run()
     }
     else if (Spielzustand == SZMENUE)
     {
-        if (CheckMMenue() == 0)
-            return;
+        if (CheckMMenue() == 0) {
+        	bQuit = true;
+	        return;
+        }
 
         SDL_RenderCopy(renderer, lpDDSBack.texture, NULL, NULL);
 
