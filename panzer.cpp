@@ -5227,6 +5227,8 @@ void pre_run()
 }
 bool bQuit = false;
 
+short shopindex = 0;
+
 void Run()
 {
 	SDL_Event event{};
@@ -5234,7 +5236,6 @@ void Run()
 	int erg;
 	int i, j;
 	double delta = 0;
-	short shopindex = 0;
 	auto Button0downbefore = Button0down;
 	auto Button1downbefore = Button1down;
 
