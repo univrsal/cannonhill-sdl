@@ -2,6 +2,7 @@
 #include "panzer.h"
 #include <SDL.h>
 
+extern SHORT Soundzustand;
 namespace audio {
 
 struct audio_file {
@@ -55,6 +56,7 @@ void manager::init()
 
 void manager::play(file f, id chan, uint8_t vol, bool loop, bool limit)
 {
+    if (Soundzustand <= 0) return;
     if (m_audio_files[f] && audio::active_playback_device) {
         if (limit && SDL_GetTicks() - m_audio_files[f]->last_play_time() < m_audio_files[f]->duration() * 1000)
             return;
