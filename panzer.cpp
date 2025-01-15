@@ -1739,7 +1739,7 @@ void CheckMouse(SDL_Event *event)
 	Entf = sqrt(xDiff * xDiff + yDiff * yDiff);
 	if (Entf > 2 && SDL_GetTicks() - LastMouseSound > 10) {
 		LastMouseSound = SDL_GetTicks();
-		audio_manager->play(static_cast<audio::file>(audio::MOUSE1 + SoundID++), audio::id::SFX, 30);
+		audio_manager->play(static_cast<audio::file>(audio::MOUSE1 + SoundID++), audio::id::SFX, 10);
 		SoundID %= 4;
 	}
 
@@ -2794,7 +2794,7 @@ void CheckMunListe()
 			if (Bild % (LastBild / 10 + 1) == 0) // nur 10 mal in der sek aktualisieren
 				MunListe[i].SoundBuffer = Munition[MunListe[i].p.Art].FlugSound;
 				audio_manager->play(Munition[MunListe[i].p.Art].FlugSound,
-					audio::id::SFX, 100, true);
+					audio::id::SFX, 70, false);
 		}
 
 		// Smoke
@@ -3140,7 +3140,7 @@ void Abschuss(short i)
 	{
 		if (Munition[Panzer[i].Munition].AbschussSound != 0)
 			audio_manager->play(Munition[Panzer[i].Munition].AbschussSound,
-					  audio::id::SFX, 100);
+					  audio::id::SFX, 100, false, false);
 
 		if (Panzer[i].Munition == MUNSCHILD)
 		{
@@ -4793,9 +4793,9 @@ void Explosion(short MunNr)
 	else if (Munition[MunListe[MunNr].p.Art].Explosion == EXPSPLITTER)
 	{
 		if (MunListe[MunNr].p.Art == MUNGEWEHR)
-			audio_manager->play(audio::RICOCHET, audio::id::SFX, 100);
+			audio_manager->play(audio::RICOCHET, audio::id::SFX, 100, false, false);
 		else
-			audio_manager->play(audio::SPLINTER, audio::id::SFX, 100);
+			audio_manager->play(audio::SPLINTER, audio::id::SFX, 100, false, false);
 
 		for (Relx = -5; Relx <= 5; Relx++)
 			for (Rely = -5; Rely <= 5; Rely++)
@@ -4832,7 +4832,7 @@ void Explosion(short MunNr)
 	}
 	else if (Munition[MunListe[MunNr].p.Art].Explosion == EXPFASS)
 	{
-		audio_manager->play(audio::ACID, audio::id::SFX, 100);
+		audio_manager->play(audio::ACID, audio::id::SFX, 100, false, false);
 
 		// S�ure
 		for (Relx = -10; Relx <= 10; Relx++)
