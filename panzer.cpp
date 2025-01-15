@@ -243,9 +243,8 @@ void InitDDraw()
 	lpDDSMKeyboard = DDLoadTexture(renderer, MKeyboardbmp);
 
 	// hier die Credits
-	lpDDSCredits.surface = SDL_LoadBMP("img/credits.bmp");
+	lpDDSCredits = DDLoadTexture(renderer, Creditsbmp, 0, 0, 255, 0, 255, true);
 	lpDDSCredits.texture = SDL_CreateTextureFromSurface(renderer, lpDDSCredits.surface);
-	// SDL_SetColorKey(lpDDSCredits.surface, SDL_TRUE, SDL_MapRGB(lpDDSCredits.surface->format, 255, 255, 255));
 
 	// hier das Titelbild
 	lpDDSTitel = DDLoadTexture(renderer, Titelbmp);
@@ -2294,13 +2293,16 @@ void PutPixel(short x, short y, DWORD color, LPDDSURFACEDESC2 *ddsdtmp)
 	pixels[y * pitch + x] = color;
 }
 
+
 DWORD GetPixel2(short x, short y, LPDDSURFACEDESC2 *ddsdtmp)
 {
 	SDL_assert(ddsdtmp->surface != nullptr);
 
 	int bpp = ddsdtmp->surface->format->BytesPerPixel;
+	int pitch = ddsdtmp->surface->pitch;
+
 	/* Here p is the address to the pixel we want to retrieve */
-	Uint8 *p = (Uint8 *)ddsdtmp->surface->pixels + y * ddsdtmp->surface->pitch + x * bpp;
+	Uint8 *p = (Uint8 *)ddsdtmp->surface->pixels + y * pitch + x * bpp;
 
 	switch (bpp) {
 		case 1:
@@ -4051,7 +4053,7 @@ void CheckCredits()
 		for (Relx = 0; Relx < Bmp[Bild].Breite; Relx++)
 		{
 			Farbe = GetPixel2(Bmp[Bild].rcSrc.left + Relx, Bmp[Bild].rcSrc.top + Rely, &Bmp[Bild].Surface);
-			if (Farbe == 0)
+			if (Farbe == 0xffffffff)
 				continue;
 			if (CreditsListe[i].Ueberschrift)
 				MakePixel(x + Relx, y + Rely, Material, 0, 0, false, -1);
