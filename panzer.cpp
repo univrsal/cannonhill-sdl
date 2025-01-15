@@ -67,7 +67,7 @@ short AktRunde;							 // In welcher Runde
 short MaxRunde;							 // Anzahl der Runden
 long CreditsZaehler;					 // Zur Zeitabh�ngigen Steuerung
 short Himmel;							 // Welcher Himmel?
-
+bool CursorShown = false;
 // Bereiche
 //							links,		oben,		rechts,				unten
 RECT rcGesamt = {0, 0, MAXX, MAXY};
@@ -1737,7 +1737,7 @@ void CheckMouse(SDL_Event *event)
 		MousePosition.y = MAXY - Bmp[CursorTyp].Hoehe;
 
 	Entf = sqrt(xDiff * xDiff + yDiff * yDiff);
-	if (Entf > 2 && SDL_GetTicks() - LastMouseSound > 10) {
+	if (Entf > 2 && SDL_GetTicks() - LastMouseSound > 10 && CursorShown) {
 		LastMouseSound = SDL_GetTicks();
 		audio_manager->play(static_cast<audio::file>(audio::MOUSE1 + SoundID++), audio::id::SFX, 10);
 		SoundID %= 4;
@@ -3949,6 +3949,9 @@ void NeuesSpiel()
 	PutPanzer();
 
 	Spielzustand = SZSPIEL;
+	// disable cursor
+	SDL_ShowCursor(SDL_DISABLE);
+	CursorShown = false;
 
 	// Schriftsurface l�schen
 	/*rcRectdes.left		= 0;
@@ -3986,6 +3989,9 @@ void InitCredits()
 	Wind.y = 0;
 	Wetter = 0;
 	Spielzustand = SZCREDITS;
+	// Disable cursor
+	SDL_ShowCursor(SDL_DISABLE);
+	CursorShown = false;
 	CreditsZaehler = 0;
 
 	// Boden einbauen
@@ -5332,6 +5338,10 @@ void Run()
 
         if (AktMenue != -1) // ein Overlaymen� vorhanden
         {
+        	// enable cursor
+        	SDL_ShowCursor(SDL_ENABLE);
+        	CursorShown = true;
+
             Zeige(false);						// Betrug (bild wird nicht angezeigt, sondern nur aufgebaut)
             erg = Menue[AktMenue].inputMouse(); // Mausaktionen abfragen
             if (erg != -1)
@@ -5341,6 +5351,9 @@ void Run()
                     if (AktRunde == MaxRunde)
                     {
                         Spielzustand = SZMENUE;
+                    	// enable cursor
+                    	SDL_ShowCursor(SDL_ENABLE);
+                    	CursorShown = true;
                         AktMenue = MENGGEWONNEN;
                         PutGMenue();
                         StopAllSound();
@@ -5384,12 +5397,19 @@ void Run()
             Menue[AktMenue].zeige(); // Men� anzeigen
 
         }
-        else
-            Zeige(false); // Das Bild aufbauen
+        else {
+	        Zeige(false); // Das Bild aufbauen
+        	// disable cursor
+        	SDL_ShowCursor(SDL_DISABLE);
+        	CursorShown = false;
+        }
         SDL_RenderCopy(renderer, lpDDSBack.texture, NULL, NULL);
     }
     else if (Spielzustand == SZMENUE)
     {
+    	// enable cursor
+    	SDL_ShowCursor(SDL_ENABLE);
+    	CursorShown = true;
         if (CheckMMenue() == 0) {
         	bQuit = true;
 	        return;
@@ -5401,6 +5421,9 @@ void Run()
     }
     else if (Spielzustand == SZSHOP)
     {
+    	// enable cursor
+    	SDL_ShowCursor(SDL_ENABLE);
+    	CursorShown = true;
         if (!Panzer[shopindex].Aktiv)
         {
             shopindex++;
@@ -5438,6 +5461,9 @@ void Run()
         SDL_RenderCopy(renderer, lpDDSBack.texture, NULL, NULL);
     }
     else if (Spielzustand == SZTITEL) {
+    	// disable cursor
+    	SDL_ShowCursor(SDL_DISABLE);
+    	CursorShown = false;
         MakeTitel();
     }
 
