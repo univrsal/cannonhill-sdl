@@ -5,7 +5,3 @@ dist/
 .vscode/
 build/
 .idea/
-*.html
-*.js
-*.wasm
-*.data
