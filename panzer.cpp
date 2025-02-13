@@ -6,6 +6,7 @@
 
 #include <chrono>
 #include <thread>
+#include <unordered_map>
 
 #include "mixer.hpp"
 #include "audio.hpp"
@@ -1803,19 +1804,36 @@ void CheckMouse(SDL_Event *event)
 
 short CheckKey(SDL_Event *event)
 {
-#define KEYDOWN(__key) (event->type == SDL_KEYDOWN && event->key.keysym.sym == __key)
-#define KEYUP(__key) (event->type == SDL_KEYUP && event->key.keysym.sym == __key)
+	static std::unordered_map<SDL_Keycode, bool> keys;
+
+	if (event->type == SDL_KEYDOWN)
+    {
+        keys[event->key.keysym.sym] = true;
+    }
+    else if (event->type == SDL_KEYUP)
+    {
+        keys[event->key.keysym.sym] = false;
+    }
+
+	auto is_key_down = [event](SDL_Keycode key) {
+		return keys[key];
+	};
+	auto is_key_up = [is_key_down](SDL_Keycode key) {
+		return !is_key_down(key);
+    };
 
 	short i, j;
 
+	printf("p0: %i, p1: %i\n", is_key_down(Panzer[0].KeyLeft), is_key_down(Panzer[1].KeyLeft));
+
 	if (Spielzustand == SZSPIEL)
 	{
-		if (KEYDOWN(SDLK_ESCAPE))
+		if (is_key_down(SDLK_ESCAPE))
 		{
 			AktMenue = MENBEENDEN;
 			return (1);
 		}
-		if (KEYDOWN(SDLK_F1))
+		if (is_key_down(SDLK_F1))
 		{
 			AktMenue = MENTASTENO;
 			return (1);
@@ -1827,63 +1845,63 @@ short CheckKey(SDL_Event *event)
 		}*/
 		for (i = 0; i < MAXSPIELER; i++)
 		{
-			if ((Panzer[i].Aktiv) && !(Panzer[i].Computer))
+			if (!Panzer[i].Aktiv || Panzer[i].Computer)
+				continue;
+
+			if (is_key_down(Panzer[i].KeyLeft))
 			{
-				if (KEYDOWN(Panzer[i].KeyLeft))
+				MoveKanone(i, -1);
+			}
+			if (is_key_down(Panzer[i].KeyRight))
+			{
+				MoveKanone(i, +1);
+			}
+			if (is_key_down(Panzer[i].KeyUp))
+			{
+				if (!Panzer[i].ButtonDownUp)
 				{
-					MoveKanone(i, -1);
+					Panzer[i].ButtonDownUp = true;
+					ChangeMunition(i, -1);
 				}
-				if (KEYDOWN(Panzer[i].KeyRight))
+			}
+			else
+				Panzer[i].ButtonDownUp = false;
+			if (is_key_down(Panzer[i].KeyDown))
+			{
+				if (!Panzer[i].ButtonDownDown)
 				{
-					MoveKanone(i, +1);
+					Panzer[i].ButtonDownDown = true;
+					ChangeMunition(i, +1);
 				}
-				if (KEYDOWN(Panzer[i].KeyUp))
+			}
+			else
+				Panzer[i].ButtonDownDown = false;
+			if ((is_key_down(Panzer[i].KeyFire)) && !(Panzer[i].SchussAktiv))
+			{
+				if ((Panzer[i].Munition == MUNSCHILD) ||
+					(Panzer[i].Munition == MUNGEWEHR) ||
+					(Panzer[i].Munition == MUNLASER) ||
+					(Panzer[i].Munition == MUNMEDI))
 				{
-					if (!Panzer[i].ButtonDownUp)
+					if (!Panzer[i].ButtonDownFire)
 					{
-						Panzer[i].ButtonDownUp = true;
-						ChangeMunition(i, -1);
-					}
-				}
-				else
-					Panzer[i].ButtonDownUp = false;
-				if (KEYDOWN(Panzer[i].KeyDown))
-				{
-					if (!Panzer[i].ButtonDownDown)
-					{
-						Panzer[i].ButtonDownDown = true;
-						ChangeMunition(i, +1);
-					}
-				}
-				else
-					Panzer[i].ButtonDownDown = false;
-				if ((KEYDOWN(Panzer[i].KeyFire)) && !(Panzer[i].SchussAktiv))
-				{
-					if ((Panzer[i].Munition == MUNSCHILD) ||
-						(Panzer[i].Munition == MUNGEWEHR) ||
-						(Panzer[i].Munition == MUNLASER) ||
-						(Panzer[i].Munition == MUNMEDI))
-					{
-						if (!Panzer[i].ButtonDownFire)
-						{
-							Panzer[i].ButtonDownFire = true;
-							Panzer[i].SchussEnergie = MAXSCHUSSENERGIE;
-							Abschuss(i);
-						}
-					}
-					else if (Panzer[i].SchussEnergie < MAXSCHUSSENERGIE)
-					{
-						Panzer[i].SchussEnergie += 1;
-						ZeichnePanzer(i, 1);
-					}
-				}
-				else if (KEYUP(Panzer[i].KeyFire))
-				{
-					Panzer[i].ButtonDownFire = false;
-					if ((Panzer[i].SchussEnergie != 0) &&
-						(Panzer[i].SchussAktiv == false))
+						Panzer[i].ButtonDownFire = true;
+						Panzer[i].SchussEnergie = MAXSCHUSSENERGIE;
 						Abschuss(i);
+					}
 				}
+				else if (Panzer[i].SchussEnergie < MAXSCHUSSENERGIE)
+				{
+					Panzer[i].SchussEnergie += 1;
+					ZeichnePanzer(i, 1);
+				}
+			}
+			else if (is_key_up(Panzer[i].KeyFire))
+			{
+				Panzer[i].ButtonDownFire = false;
+				if ((Panzer[i].SchussEnergie != 0) &&
+					(Panzer[i].SchussAktiv == false))
+					Abschuss(i);
 			}
 		}
 
@@ -1902,25 +1920,26 @@ short CheckKey(SDL_Event *event)
 			}
 			else Testmodus = true;
 		}*/
-		if ((KEYDOWN(SDLK_LCTRL)) && (KEYDOWN(SDLK_PRIOR)) &&
-			(KEYDOWN(SDLK_SPACE)))
+		/*
+		if ((is_key_down(SDLK_LCTRL)) && (is_key_down(SDLK_PRIOR)) &&
+			(is_key_down(SDLK_SPACE)))
 		{
 			g = 9.81;
 			return (1);
 		}
-		if ((KEYDOWN(SDLK_LCTRL)) && (KEYDOWN(SDLK_PRIOR)))
+		if ((is_key_down(SDLK_LCTRL)) && (is_key_down(SDLK_PRIOR)))
 		{
 			g++;
 			return (1);
 		}
-		if ((KEYDOWN(SDLK_LCTRL)) && (KEYDOWN(SDLK_SPACE)))
+		if ((is_key_down(SDLK_LCTRL)) && (is_key_down(SDLK_SPACE)))
 		{
 			g--;
 			if (g < 0)
 				g = 0;
 			return (1);
 		}
-		if ((KEYDOWN(SDLK_LCTRL)) && (KEYDOWN(SDLK_HOME)))
+		if ((is_key_down(SDLK_LCTRL)) && (is_key_down(SDLK_HOME)))
 		{
 			for (i = 0; i < MAXSPIELER; i++)
 				for (j = 1; j < MUNANZAHL; j++)
@@ -1929,11 +1948,11 @@ short CheckKey(SDL_Event *event)
 						Panzer[i].Lager[j] = -1;
 				}
 			return (1);
-		}
+		}*/
 	}
 	else if (Spielzustand == SZCREDITS)
 	{
-		if (KEYDOWN(SDLK_ESCAPE))
+		if (is_key_down(SDLK_ESCAPE))
 		{
 			Spielzustand = SZMENUE;
 			AktMenue = MENMAIN;
@@ -1943,8 +1962,8 @@ short CheckKey(SDL_Event *event)
 	}
 	else if (Spielzustand == SZTITEL)
 	{
-		if ((KEYDOWN(SDLK_ESCAPE)) || (KEYDOWN(SDLK_SPACE)) ||
-			(KEYDOWN(SDLK_RETURN)) || (KEYDOWN(SDLK_KP_ENTER)))
+		if ((is_key_down(SDLK_ESCAPE)) || (is_key_down(SDLK_SPACE)) ||
+			(is_key_down(SDLK_RETURN)) || (is_key_down(SDLK_KP_ENTER)))
 		{
 			Spielzustand = SZMENUE;
 			AktMenue = MENMAIN;
@@ -5262,7 +5281,7 @@ void Run()
         {
             if (event.key.keysym.sym == SDLK_l)
             {
-                Panzer[1].LebensEnergie = -1;
+                //Panzer[1].LebensEnergie = -1;
             }
         }
         if (CheckKey(&event) == 0)
