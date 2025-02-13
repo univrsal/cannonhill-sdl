@@ -1801,11 +1801,10 @@ void CheckMouse(SDL_Event *event)
 		DrawString(StdString, 20, 90, 1, lpDDSSchrift.texture);
 	}
 }
+static std::unordered_map<SDL_Keycode, bool> keys;
 
-short CheckKey(SDL_Event *event)
+void UpdateKeymap(SDL_Event* event)
 {
-	static std::unordered_map<SDL_Keycode, bool> keys;
-
 	if (event->type == SDL_KEYDOWN)
     {
         keys[event->key.keysym.sym] = true;
@@ -1815,7 +1814,11 @@ short CheckKey(SDL_Event *event)
         keys[event->key.keysym.sym] = false;
     }
 
-	auto is_key_down = [event](SDL_Keycode key) {
+}
+
+short CheckKey()
+{
+	auto is_key_down = [](SDL_Keycode key) {
 		return keys[key];
 	};
 	auto is_key_up = [is_key_down](SDL_Keycode key) {
@@ -1823,8 +1826,6 @@ short CheckKey(SDL_Event *event)
     };
 
 	short i, j;
-
-	printf("p0: %i, p1: %i\n", is_key_down(Panzer[0].KeyLeft), is_key_down(Panzer[1].KeyLeft));
 
 	if (Spielzustand == SZSPIEL)
 	{
@@ -5284,11 +5285,13 @@ void Run()
                 //Panzer[1].LebensEnergie = -1;
             }
         }
-        if (CheckKey(&event) == 0)
-            return; // Das Keyboard abfragen
+        UpdateKeymap(&event);
         CheckMouse(&event);						// Den MouseZustand abchecken
 
     }
+
+	if (CheckKey() == 0) return;
+
 
     if (Button0downbefore && Button0down)
         ButtonPush = 0;
